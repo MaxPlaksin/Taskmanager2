@@ -407,8 +407,34 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
   };
 
   const handleSave = async (updatedTask) => {
-    onTaskUpdate(updatedTask);
-    setShowEditForm(false);
+    try {
+      const response = await fetch(`/api/tasks/${updatedTask.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updatedTask)
+      });
+
+      if (response.ok) {
+        const savedTask = await response.json();
+        onTaskUpdate({
+          ...savedTask,
+          startDate: savedTask.startDate ? new Date(savedTask.startDate) : null,
+          dueDate: savedTask.dueDate ? new Date(savedTask.dueDate) : null,
+          createdAt: new Date(savedTask.createdAt),
+          updatedAt: new Date(savedTask.updatedAt)
+        });
+        setShowEditForm(false);
+      } else {
+        console.error('Ошибка сохранения задачи');
+        alert('Ошибка сохранения задачи');
+      }
+    } catch (error) {
+      console.error('Ошибка сохранения задачи:', error);
+      alert('Ошибка сохранения задачи');
+    }
   };
 
   const copyToClipboard = (text) => {

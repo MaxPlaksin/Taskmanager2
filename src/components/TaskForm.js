@@ -190,7 +190,13 @@ const TaskForm = ({ onSave, onCancel, task = null }) => {
       status: task?.status || 'active'
     };
     
-    onSave(taskData);
+    // Если это новая задача (task = null), используем POST
+    // Если это редактирование (task.id существует), используем PUT
+    if (task && task.id) {
+      onSave({ ...taskData, id: task.id });
+    } else {
+      onSave(taskData);
+    }
   };
 
   return (

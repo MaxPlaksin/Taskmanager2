@@ -310,8 +310,10 @@ const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) =>
 
   // Преобразуем задачи в события для календаря
   const events = tasks.map(task => {
-    const startDate = task.startDate ? new Date(task.startDate) : new Date();
-    const dueDate = task.dueDate ? new Date(task.dueDate) : new Date();
+    // Если нет даты начала, используем дату создания
+    const startDate = task.startDate ? new Date(task.startDate) : new Date(task.createdAt);
+    // Если нет даты окончания, используем дату начала + 1 день
+    const dueDate = task.dueDate ? new Date(task.dueDate) : new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
     const today = new Date();
     const isOverdue = dueDate < today && task.status === 'active';
     const isDueToday = dueDate.toDateString() === today.toDateString();
