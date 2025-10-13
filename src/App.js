@@ -6,29 +6,12 @@ import Projects from './components/Projects';
 import TaskModal from './components/TaskModal';
 import TaskForm from './components/TaskForm';
 import Login from './components/Login';
-import UserInfo from './components/UserInfo';
 import { TaskProvider } from './contexts/TaskContext';
 
 const AppContainer = styled.div`
   display: flex;
   height: 100vh;
   background-color: #f5f5f5;
-`;
-
-const Header = styled.div`
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 16px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-`;
-
-const AppTitle = styled.h1`
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
 `;
 
 const MainContent = styled.div`
@@ -249,12 +232,8 @@ function App() {
   return (
     <TaskProvider value={{ tasks, handleTaskUpdate, handleTaskCreate, handleTaskDelete }}>
       <AppContainer>
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} user={user} />
+        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} user={user} onLogout={handleLogout} />
         <MainContent>
-          <Header>
-            <AppTitle>Task Manager v2</AppTitle>
-            <UserInfo user={user} onLogout={handleLogout} />
-          </Header>
           <ContentArea>
             {renderContent()}
           </ContentArea>

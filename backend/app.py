@@ -105,6 +105,7 @@ def create_task():
             description=data.get('description'),
             status=data.get('status', 'active'),
             priority=data.get('priority', 'medium'),
+            start_date=datetime.fromisoformat(data.get('startDate')) if data.get('startDate') else None,
             due_date=datetime.fromisoformat(data.get('dueDate')) if data.get('dueDate') else None,
             git_repository=data.get('gitRepository'),
             server_access=data.get('serverAccess'),

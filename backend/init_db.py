@@ -69,6 +69,7 @@ def init_db():
                 description='Реализовать систему ролей и авторизации для Task Manager',
                 status='completed',
                 priority='high',
+                start_date=datetime(2024, 10, 1),
                 due_date=datetime.now(),
                 created_by=admin.id,
                 assignee_id=developer.id
@@ -79,6 +80,7 @@ def init_db():
                 description='Разработать форму входа в систему с валидацией',
                 status='active',
                 priority='medium',
+                start_date=datetime(2024, 10, 15),
                 due_date=datetime(2024, 12, 31),
                 created_by=manager.id,
                 assignee_id=developer.id
@@ -89,6 +91,7 @@ def init_db():
                 description='Провести полное тестирование всех функций приложения',
                 status='active',
                 priority='low',
+                start_date=datetime(2024, 11, 1),
                 due_date=datetime(2025, 1, 15),
                 created_by=admin.id,
                 assignee_id=developer.id

@@ -64,6 +64,7 @@ class Task(db.Model):
     description = db.Column(db.Text)
     status = db.Column(db.String(20), default='active')
     priority = db.Column(db.String(20), default='medium')
+    start_date = db.Column(db.DateTime)
     due_date = db.Column(db.DateTime)
     git_repository = db.Column(db.String(500))
     server_access = db.Column(db.String(500))
@@ -84,6 +85,7 @@ class Task(db.Model):
             'description': self.description,
             'status': self.status,
             'priority': self.priority,
+            'startDate': self.start_date.isoformat() if self.start_date else None,
             'dueDate': self.due_date.isoformat() if self.due_date else None,
             'gitRepository': self.git_repository,
             'serverAccess': self.server_access,

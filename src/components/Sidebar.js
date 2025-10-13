@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FiHome, FiFolder, FiCalendar, FiSettings } from 'react-icons/fi';
+import { FiHome, FiFolder, FiSettings, FiUser, FiLogOut, FiChevronDown } from 'react-icons/fi';
 
 const SidebarContainer = styled.div`
   width: 250px;
@@ -76,10 +76,25 @@ const SidebarFooter = styled.div`
   background: #fafafa;
 `;
 
-const UserInfo = styled.div`
+const UserDropdownContainer = styled.div`
+  position: relative;
+`;
+
+const UserDropdownButton = styled.button`
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: 8px;
+
+  &:hover {
+    background: #f8f9fa;
+  }
 `;
 
 const UserAvatar = styled.div`
@@ -96,6 +111,7 @@ const UserAvatar = styled.div`
 
 const UserDetails = styled.div`
   flex: 1;
+  text-align: left;
 `;
 
 const UserName = styled.div`
@@ -109,13 +125,99 @@ const UserRole = styled.div`
   color: #666;
 `;
 
-const Sidebar = ({ activeTab, onTabChange, user }) => {
+const UserDropdownMenu = styled.div`
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  padding: 8px 0;
+  margin-bottom: 8px;
+  z-index: 1000;
+  border: 1px solid #e1e5e9;
+`;
+
+const DropdownItem = styled.button`
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #333;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: #f8f9fa;
+  }
+
+  &:first-child {
+    border-radius: 8px 8px 0 0;
+  }
+
+  &:last-child {
+    border-radius: 0 0 8px 8px;
+  }
+`;
+
+const RoleBadge = styled.span`
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: ${props => {
+    switch(props.role) {
+      case 'admin': return '#dc3545';
+      case 'manager': return '#fd7e14';
+      case 'developer': return '#28a745';
+      default: return '#6c757d';
+    }
+  }};
+  color: white;
+`;
+
+const Sidebar = ({ activeTab, onTabChange, user, onLogout }) => {
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
   const menuItems = [
     { id: 'dashboard', label: 'Дашборд', icon: FiHome },
     { id: 'projects', label: 'Проекты', icon: FiFolder },
-    { id: 'calendar', label: 'Календарь', icon: FiCalendar },
     { id: 'settings', label: 'Настройки', icon: FiSettings }
   ];
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      onLogout();
+    } catch (error) {
+      console.error('Ошибка выхода:', error);
+      onLogout(); // Выходим в любом случае
+    }
+    setShowUserDropdown(false);
+  };
+
+  const getRoleLabel = (role) => {
+    switch(role) {
+      case 'admin': return 'Администратор';
+      case 'manager': return 'Менеджер';
+      case 'developer': return 'Разработчик';
+      default: return role;
+    }
+  };
+
+  const getInitials = (name) => {
+    return name.split(' ').map(word => word[0]).join('').toUpperCase();
+  };
 
   return (
     <SidebarContainer>
@@ -142,17 +244,48 @@ const Sidebar = ({ activeTab, onTabChange, user }) => {
       </Navigation>
 
       <SidebarFooter>
-        <UserInfo>
-          <UserAvatar>{user ? user.fullName.split(' ').map(word => word[0]).join('').toUpperCase() : '👤'}</UserAvatar>
-          <UserDetails>
-            <UserName>{user ? user.fullName : 'Пользователь'}</UserName>
-            <UserRole>
-              {user ? (user.role === 'admin' ? 'Администратор' : 
-                      user.role === 'manager' ? 'Менеджер' : 
-                      'Разработчик') : 'Гость'}
-            </UserRole>
-          </UserDetails>
-        </UserInfo>
+        <UserDropdownContainer>
+          <UserDropdownButton onClick={() => setShowUserDropdown(!showUserDropdown)}>
+            <UserAvatar>
+              {user ? getInitials(user.fullName) : '👤'}
+            </UserAvatar>
+            <UserDetails>
+              <UserName>{user ? user.fullName : 'Пользователь'}</UserName>
+              <UserRole>{user ? getRoleLabel(user.role) : 'Гость'}</UserRole>
+            </UserDetails>
+            <FiChevronDown style={{ fontSize: '12px' }} />
+          </UserDropdownButton>
+
+          {showUserDropdown && (
+            <>
+              <div 
+                style={{ 
+                  position: 'fixed', 
+                  top: 0, 
+                  left: 0, 
+                  right: 0, 
+                  bottom: 0, 
+                  zIndex: 999 
+                }} 
+                onClick={() => setShowUserDropdown(false)}
+              />
+              <UserDropdownMenu>
+                <DropdownItem>
+                  <FiUser />
+                  <div>
+                    <div style={{ fontWeight: '600' }}>{user ? user.fullName : 'Пользователь'}</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>{user ? user.email : ''}</div>
+                    {user && <RoleBadge role={user.role}>{getRoleLabel(user.role)}</RoleBadge>}
+                  </div>
+                </DropdownItem>
+                <DropdownItem onClick={handleLogout}>
+                  <FiLogOut />
+                  Выйти из системы
+                </DropdownItem>
+              </UserDropdownMenu>
+            </>
+          )}
+        </UserDropdownContainer>
       </SidebarFooter>
     </SidebarContainer>
   );

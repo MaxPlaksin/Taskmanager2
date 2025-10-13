@@ -310,6 +310,7 @@ const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) =>
 
   // Преобразуем задачи в события для календаря
   const events = tasks.map(task => {
+    const startDate = task.startDate ? new Date(task.startDate) : new Date();
     const dueDate = task.dueDate ? new Date(task.dueDate) : new Date();
     const today = new Date();
     const isOverdue = dueDate < today && task.status === 'active';
@@ -318,7 +319,7 @@ const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) =>
     return {
       id: task.id,
       title: `${task.title}${isOverdue ? ' (ПРОСРОЧЕНО)' : isDueToday ? ' (СЕГОДНЯ)' : ''}`,
-      start: dueDate,
+      start: startDate,
       end: dueDate,
       resource: task,
       allDay: true
@@ -331,6 +332,7 @@ const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) =>
 
   const eventStyleGetter = (event) => {
     const task = event.resource;
+    const startDate = task.startDate ? new Date(task.startDate) : new Date();
     const dueDate = task.dueDate ? new Date(task.dueDate) : new Date();
     const today = new Date();
     const isOverdue = dueDate < today && task.status === 'active';

@@ -163,6 +163,7 @@ const TaskForm = ({ onSave, onCancel, task = null }) => {
     title: task?.title || '',
     description: task?.description || '',
     priority: task?.priority || 'medium',
+    startDate: task?.startDate ? new Date(task.startDate).toISOString().split('T')[0] : '',
     dueDate: task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
     gitRepository: task?.gitRepository || '',
     serverAccess: task?.serverAccess || '',
@@ -184,6 +185,7 @@ const TaskForm = ({ onSave, onCancel, task = null }) => {
     
     const taskData = {
       ...formData,
+      startDate: formData.startDate ? new Date(formData.startDate) : null,
       dueDate: formData.dueDate ? new Date(formData.dueDate) : null,
       status: task?.status || 'active'
     };
@@ -238,6 +240,16 @@ const TaskForm = ({ onSave, onCancel, task = null }) => {
                 <option value="medium">Средний</option>
                 <option value="high">Высокий</option>
               </Select>
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Дата начала</Label>
+              <Input
+                type="date"
+                name="startDate"
+                value={formData.startDate}
+                onChange={handleChange}
+              />
             </FormGroup>
 
             <FormGroup>
