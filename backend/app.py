@@ -154,13 +154,26 @@ def update_task(task_id):
 def delete_task(task_id):
     """Удаление задачи"""
     try:
-        task = Task.query.get_or_404(task_id)
+        task = Task.query.get(task_id)
+        if not task:
+            return jsonify({'error': 'Task not found'}), 404
+            
+        # Удаляем связанные файлы
+        for file in task.files:
+            try:
+                import os
+                if os.path.exists(file.file_path):
+                    os.remove(file.file_path)
+            except Exception as e:
+                print(f"Ошибка удаления файла {file.file_path}: {e}")
+        
         db.session.delete(task)
         db.session.commit()
         
         return jsonify({'message': 'Task deleted successfully'})
     except Exception as e:
         db.session.rollback()
+        print(f"Ошибка удаления задачи {task_id}: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/tasks/<int:task_id>/archive', methods=['POST'])

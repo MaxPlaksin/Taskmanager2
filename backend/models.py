@@ -117,7 +117,7 @@ class TaskFile(db.Model):
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship
-    task = db.relationship('Task', backref=db.backref('files', lazy=True))
+    task = db.relationship('Task', backref=db.backref('files', lazy=True, cascade="all, delete-orphan"))
     
     def to_dict(self):
         return {
