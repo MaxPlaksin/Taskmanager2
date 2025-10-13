@@ -185,8 +185,8 @@ const TaskForm = ({ onSave, onCancel, task = null }) => {
     
     const taskData = {
       ...formData,
-      startDate: formData.startDate ? new Date(formData.startDate) : null,
-      dueDate: formData.dueDate ? new Date(formData.dueDate) : null,
+      startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+      dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
       status: task?.status || 'active'
     };
     

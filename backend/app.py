@@ -110,8 +110,8 @@ def create_task():
             description=data.get('description'),
             status=data.get('status', 'active'),
             priority=data.get('priority', 'medium'),
-            start_date=datetime.fromisoformat(data.get('startDate')) if data.get('startDate') else None,
-            due_date=datetime.fromisoformat(data.get('dueDate')) if data.get('dueDate') else None,
+            start_date=datetime.fromisoformat(data.get('startDate').replace('Z', '+00:00')) if data.get('startDate') else None,
+            due_date=datetime.fromisoformat(data.get('dueDate').replace('Z', '+00:00')) if data.get('dueDate') else None,
             git_repository=data.get('gitRepository'),
             server_access=data.get('serverAccess'),
             password=data.get('password'),
@@ -141,19 +141,34 @@ def update_task(task_id):
         task.description = data.get('description', task.description)
         task.status = data.get('status', task.status)
         task.priority = data.get('priority', task.priority)
-        task.due_date = datetime.fromisoformat(data.get('dueDate')) if data.get('dueDate') else task.due_date
+        # Обработка дат с улучшенной обработкой ошибок
+        if data.get('startDate'):
+            try:
+                task.start_date = datetime.fromisoformat(data.get('startDate').replace('Z', '+00:00'))
+            except ValueError:
+                print(f"Ошибка парсинга startDate: {data.get('startDate')}")
+                task.start_date = task.start_date
+        
+        if data.get('dueDate'):
+            try:
+                task.due_date = datetime.fromisoformat(data.get('dueDate').replace('Z', '+00:00'))
+            except ValueError:
+                print(f"Ошибка парсинга dueDate: {data.get('dueDate')}")
+                task.due_date = task.due_date
         task.git_repository = data.get('gitRepository', task.git_repository)
         task.server_access = data.get('serverAccess', task.server_access)
         task.password = data.get('password', task.password)
         task.ssh_key = data.get('sshKey', task.ssh_key)
         task.technical_spec = data.get('technicalSpec', task.technical_spec)
+        task.assignee_id = data.get('assigneeId', task.assignee_id)
         task.updated_at = datetime.utcnow()
         
         db.session.commit()
         
-        return jsonify({'message': 'Task updated successfully'})
+        return jsonify(task.to_dict())
     except Exception as e:
         db.session.rollback()
+        print(f"Ошибка обновления задачи {task_id}: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
