@@ -30,13 +30,19 @@ const Logo = styled.h1`
 const LogoIcon = styled.div`
   width: 32px;
   height: 32px;
-  background: #4a90e2;
+  background: transparent;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-size: 16px;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 `;
 
 const Navigation = styled.nav`
@@ -223,7 +229,9 @@ const Sidebar = ({ activeTab, onTabChange, user, onLogout }) => {
     <SidebarContainer>
       <SidebarHeader>
         <Logo>
-          <LogoIcon>📋</LogoIcon>
+          <LogoIcon>
+            <img src="/agb-logo.svg" alt="AGB Logo" />
+          </LogoIcon>
           Task Manager
         </Logo>
       </SidebarHeader>
