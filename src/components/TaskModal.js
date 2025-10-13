@@ -392,23 +392,83 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
     setShowEditForm(true);
   };
 
-  const handleArchive = () => {
+  const handleArchive = async () => {
     if (window.confirm('Архивировать эту задачу?')) {
-      onTaskUpdate({ ...task, status: 'archived' });
-      onClose();
+      try {
+        const response = await fetch(`/api/tasks/${task.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ ...task, status: 'archived' })
+        });
+
+        if (response.ok) {
+          onTaskUpdate({ ...task, status: 'archived' });
+          onClose();
+        } else {
+          console.error('Ошибка архивирования задачи');
+          alert('Ошибка архивирования задачи');
+        }
+      } catch (error) {
+        console.error('Ошибка архивирования задачи:', error);
+        alert('Ошибка архивирования задачи');
+      }
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm('Удалить эту задачу? Это действие нельзя отменить.')) {
-      onTaskDelete(task.id);
-      onClose();
+      try {
+        const response = await fetch(`/api/tasks/${task.id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          onTaskDelete(task.id);
+          onClose();
+        } else {
+          console.error('Ошибка удаления задачи');
+          alert('Ошибка удаления задачи');
+        }
+      } catch (error) {
+        console.error('Ошибка удаления задачи:', error);
+        alert('Ошибка удаления задачи');
+      }
     }
   };
 
-  const handleSave = (updatedTask) => {
-    onTaskUpdate(updatedTask);
-    setShowEditForm(false);
+  const handleSave = async (updatedTask) => {
+    try {
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updatedTask)
+      });
+
+      if (response.ok) {
+        const savedTask = await response.json();
+        onTaskUpdate({
+          ...savedTask,
+          startDate: savedTask.startDate ? new Date(savedTask.startDate) : null,
+          dueDate: savedTask.dueDate ? new Date(savedTask.dueDate) : null,
+          createdAt: new Date(savedTask.createdAt),
+          updatedAt: new Date(savedTask.updatedAt)
+        });
+        setShowEditForm(false);
+      } else {
+        console.error('Ошибка сохранения задачи');
+        alert('Ошибка сохранения задачи');
+      }
+    } catch (error) {
+      console.error('Ошибка сохранения задачи:', error);
+      alert('Ошибка сохранения задачи');
+    }
   };
 
   const copyToClipboard = (text) => {

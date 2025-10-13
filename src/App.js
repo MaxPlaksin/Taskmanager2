@@ -82,7 +82,13 @@ function App() {
       
       if (response.ok) {
         const tasksData = await response.json();
-        setTasks(tasksData);
+        setTasks(tasksData.map(task => ({
+          ...task,
+          startDate: task.startDate ? new Date(task.startDate) : null,
+          dueDate: task.dueDate ? new Date(task.dueDate) : null,
+          createdAt: new Date(task.createdAt),
+          updatedAt: new Date(task.updatedAt)
+        })));
       } else {
         console.error('Ошибка загрузки задач');
       }
@@ -119,11 +125,18 @@ function App() {
 
       if (response.ok) {
         const taskData = await response.json();
+        const taskWithDates = {
+          ...taskData,
+          startDate: taskData.startDate ? new Date(taskData.startDate) : null,
+          dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
+          createdAt: new Date(taskData.createdAt),
+          updatedAt: new Date(taskData.updatedAt)
+        };
         setTasks(tasks.map(task => 
-          task.id === updatedTask.id ? taskData : task
+          task.id === updatedTask.id ? taskWithDates : task
         ));
         if (selectedTask && selectedTask.id === updatedTask.id) {
-          setSelectedTask(taskData);
+          setSelectedTask(taskWithDates);
         }
       }
     } catch (error) {
@@ -144,7 +157,14 @@ function App() {
 
       if (response.ok) {
         const taskData = await response.json();
-        setTasks([...tasks, taskData]);
+        const taskWithDates = {
+          ...taskData,
+          startDate: taskData.startDate ? new Date(taskData.startDate) : null,
+          dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
+          createdAt: new Date(taskData.createdAt),
+          updatedAt: new Date(taskData.updatedAt)
+        };
+        setTasks([...tasks, taskWithDates]);
         setShowTaskForm(false);
       }
     } catch (error) {
