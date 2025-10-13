@@ -2,10 +2,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
+from flask_login import LoginManager, login_required, current_user
 from datetime import datetime
 import os
 from config import Config
-from models import db, Task, TaskFile
+from models import db, Task, TaskFile, User
+from auth import auth_bp, admin_required, manager_or_admin_required
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -14,24 +16,63 @@ app.config.from_object(Config)
 db.init_app(app)
 CORS(app)
 
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
+login_manager.login_message = 'Пожалуйста, войдите в систему для доступа к этой странице.'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Register auth blueprint
+app.register_blueprint(auth_bp)
+
 # Initialize Flask-Admin
 admin = Admin(app, name='Task Manager Admin', template_mode='bootstrap3')
 
-# Admin views
+# Admin views with authentication
 class TaskAdminView(ModelView):
-    column_list = ['id', 'title', 'status', 'priority', 'due_date', 'created_at']
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin()
+    
+    def inaccessible_callback(self, name, **kwargs):
+        return jsonify({'error': 'Требуются права администратора'}), 403
+    
+    column_list = ['id', 'title', 'status', 'priority', 'due_date', 'created_at', 'assignee', 'creator']
     column_searchable_list = ['title', 'description']
     column_filters = ['status', 'priority', 'created_at']
     form_columns = ['title', 'description', 'status', 'priority', 'due_date', 
-                   'git_repository', 'server_access', 'password', 'ssh_key', 'technical_spec']
+                   'git_repository', 'server_access', 'password', 'ssh_key', 'technical_spec',
+                   'assignee_id', 'created_by']
 
 class TaskFileAdminView(ModelView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin()
+    
+    def inaccessible_callback(self, name, **kwargs):
+        return jsonify({'error': 'Требуются права администратора'}), 403
+    
     column_list = ['id', 'original_filename', 'file_size', 'uploaded_at', 'task_id']
     column_searchable_list = ['original_filename']
     column_filters = ['uploaded_at', 'mime_type']
 
+class UserAdminView(ModelView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin()
+    
+    def inaccessible_callback(self, name, **kwargs):
+        return jsonify({'error': 'Требуются права администратора'}), 403
+    
+    column_list = ['id', 'username', 'email', 'role', 'full_name', 'is_active', 'created_at']
+    column_searchable_list = ['username', 'email', 'full_name']
+    column_filters = ['role', 'is_active', 'created_at']
+    form_columns = ['username', 'email', 'password_hash', 'role', 'full_name', 'is_active']
+
 admin.add_view(TaskAdminView(Task, db.session))
 admin.add_view(TaskFileAdminView(TaskFile, db.session))
+admin.add_view(UserAdminView(User, db.session))
 
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
@@ -53,8 +94,9 @@ def get_task(task_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/tasks', methods=['POST'])
+@manager_or_admin_required
 def create_task():
-    """Создание новой задачи"""
+    """Создание новой задачи (только для менеджеров и администраторов)"""
     try:
         data = request.get_json()
         
@@ -68,7 +110,9 @@ def create_task():
             server_access=data.get('serverAccess'),
             password=data.get('password'),
             ssh_key=data.get('sshKey'),
-            technical_spec=data.get('technicalSpec')
+            technical_spec=data.get('technicalSpec'),
+            created_by=current_user.id,
+            assignee_id=data.get('assigneeId')
         )
         
         db.session.add(task)
@@ -138,8 +182,9 @@ def health_check():
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
 @app.route('/api/stats', methods=['GET'])
+@admin_required
 def get_stats():
-    """Получение статистики задач"""
+    """Получение статистики задач (только для администраторов)"""
     try:
         # Общее количество задач
         total = Task.query.count()

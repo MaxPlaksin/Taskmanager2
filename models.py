@@ -1,7 +1,60 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 from datetime import datetime
 
 db = SQLAlchemy()
+
+class User(UserMixin, db.Model):
+    __tablename__ = 'users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(50), nullable=False, default='developer')  # admin, manager, developer
+    full_name = db.Column(db.String(120), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime)
+    
+    # Связь с задачами
+    assigned_tasks = db.relationship('Task', backref='assignee', lazy=True, foreign_keys='Task.assignee_id')
+    created_tasks = db.relationship('Task', backref='creator', lazy=True, foreign_keys='Task.created_by')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'role': self.role,
+            'fullName': self.full_name,
+            'isActive': self.is_active,
+            'createdAt': self.created_at.isoformat(),
+            'lastLogin': self.last_login.isoformat() if self.last_login else None
+        }
+    
+    def has_role(self, role):
+        """Проверяет, есть ли у пользователя определенная роль"""
+        return self.role == role
+    
+    def is_admin(self):
+        """Проверяет, является ли пользователь администратором"""
+        return self.role == 'admin'
+    
+    def is_manager(self):
+        """Проверяет, является ли пользователь менеджером"""
+        return self.role == 'manager'
+    
+    def is_developer(self):
+        """Проверяет, является ли пользователь разработчиком"""
+        return self.role == 'developer'
+    
+    def can_view_analytics(self):
+        """Проверяет, может ли пользователь просматривать аналитику"""
+        return self.is_admin()
+    
+    def __repr__(self):
+        return f'<User {self.username}>'
 
 class Task(db.Model):
     __tablename__ = 'tasks'
@@ -20,6 +73,10 @@ class Task(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Связи с пользователями
+    assignee_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -34,7 +91,12 @@ class Task(db.Model):
             'sshKey': self.ssh_key,
             'technicalSpec': self.technical_spec,
             'createdAt': self.created_at.isoformat(),
-            'updatedAt': self.updated_at.isoformat()
+            'updatedAt': self.updated_at.isoformat(),
+            'assigneeId': self.assignee_id,
+            'assigneeName': self.assignee.full_name if self.assignee else None,
+            'createdBy': self.created_by,
+            'creatorName': self.creator.full_name if self.creator else None,
+            'files': [file.to_dict() for file in self.files]
         }
     
     def __repr__(self):
