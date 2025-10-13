@@ -14,13 +14,14 @@ app.config.from_object(Config)
 
 # Initialize extensions
 db.init_app(app)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
 login_manager.login_message = 'Пожалуйста, войдите в систему для доступа к этой странице.'
+login_manager.session_protection = 'strong'
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -100,6 +101,10 @@ def create_task():
     try:
         data = request.get_json()
         
+        # Проверяем, что пользователь авторизован
+        if not current_user.is_authenticated:
+            return jsonify({'error': 'Пользователь не авторизован'}), 401
+            
         task = Task(
             title=data.get('title'),
             description=data.get('description'),
@@ -119,9 +124,10 @@ def create_task():
         db.session.add(task)
         db.session.commit()
         
-        return jsonify({'id': task.id, 'message': 'Task created successfully'}), 201
+        return jsonify(task.to_dict()), 201
     except Exception as e:
         db.session.rollback()
+        print(f"Ошибка создания задачи: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
