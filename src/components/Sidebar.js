@@ -230,7 +230,7 @@ const Sidebar = ({ activeTab, onTabChange, user, onLogout }) => {
       <SidebarHeader>
         <Logo>
           <LogoIcon>
-            <img src="/agb-logo.svg" alt="AGB Logo" />
+            <img src="/agb-logo-simple.svg" alt="AGB Logo" />
           </LogoIcon>
           Task Manager
         </Logo>
