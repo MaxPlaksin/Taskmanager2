@@ -1,10 +1,12 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_login import LoginManager, login_required, current_user
 from datetime import datetime
 import os
+import uuid
+from werkzeug.utils import secure_filename
 from config import Config
 from models import db, Task, TaskFile, User
 from auth import auth_bp, admin_required, manager_or_admin_required
@@ -41,12 +43,12 @@ class TaskAdminView(ModelView):
     def inaccessible_callback(self, name, **kwargs):
         return jsonify({'error': 'Требуются права администратора'}), 403
     
-    column_list = ['id', 'title', 'status', 'priority', 'due_date', 'created_at', 'assignee', 'creator']
+    column_list = ['id', 'title', 'status', 'priority', 'progress', 'due_date', 'created_at', 'assignee', 'creator']
     column_searchable_list = ['title', 'description']
-    column_filters = ['status', 'priority', 'created_at']
-    form_columns = ['title', 'description', 'status', 'priority', 'due_date', 
-                   'git_repository', 'server_access', 'password', 'ssh_key', 'technical_spec',
-                   'assignee_id', 'created_by']
+    column_filters = ['status', 'priority', 'progress', 'created_at']
+    form_columns = ['title', 'description', 'status', 'priority', 'progress', 'start_date', 'due_date', 
+                   'git_repository', 'server_ip', 'server_password', 'ssh_key', 'technical_spec',
+                   'estimated_hours', 'actual_hours', 'assignee_id', 'created_by']
 
 class TaskFileAdminView(ModelView):
     def is_accessible(self):
@@ -110,13 +112,16 @@ def create_task():
             description=data.get('description'),
             status=data.get('status', 'active'),
             priority=data.get('priority', 'medium'),
+            progress=data.get('progress', 'not_started'),
             start_date=datetime.fromisoformat(data.get('startDate').replace('Z', '+00:00')) if data.get('startDate') else None,
             due_date=datetime.fromisoformat(data.get('dueDate').replace('Z', '+00:00')) if data.get('dueDate') else None,
             git_repository=data.get('gitRepository'),
-            server_access=data.get('serverAccess'),
-            password=data.get('password'),
+            server_ip=data.get('serverIp'),
+            server_password=data.get('serverPassword'),
             ssh_key=data.get('sshKey'),
             technical_spec=data.get('technicalSpec'),
+            estimated_hours=data.get('estimatedHours'),
+            actual_hours=data.get('actualHours', 0),
             created_by=current_user.id,
             assignee_id=data.get('assigneeId')
         )
@@ -141,6 +146,8 @@ def update_task(task_id):
         task.description = data.get('description', task.description)
         task.status = data.get('status', task.status)
         task.priority = data.get('priority', task.priority)
+        task.progress = data.get('progress', task.progress)
+        
         # Обработка дат с улучшенной обработкой ошибок
         if data.get('startDate'):
             try:
@@ -155,11 +162,14 @@ def update_task(task_id):
             except ValueError:
                 print(f"Ошибка парсинга dueDate: {data.get('dueDate')}")
                 task.due_date = task.due_date
+                
         task.git_repository = data.get('gitRepository', task.git_repository)
-        task.server_access = data.get('serverAccess', task.server_access)
-        task.password = data.get('password', task.password)
+        task.server_ip = data.get('serverIp', task.server_ip)
+        task.server_password = data.get('serverPassword', task.server_password)
         task.ssh_key = data.get('sshKey', task.ssh_key)
         task.technical_spec = data.get('technicalSpec', task.technical_spec)
+        task.estimated_hours = data.get('estimatedHours', task.estimated_hours)
+        task.actual_hours = data.get('actualHours', task.actual_hours)
         task.assignee_id = data.get('assigneeId', task.assignee_id)
         task.updated_at = datetime.utcnow()
         
@@ -195,6 +205,90 @@ def delete_task(task_id):
     except Exception as e:
         db.session.rollback()
         print(f"Ошибка удаления задачи {task_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/tasks/<int:task_id>/files', methods=['POST'])
+@login_required
+def upload_file(task_id):
+    """Загрузка файла к задаче"""
+    try:
+        task = Task.query.get_or_404(task_id)
+        
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+            
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+            
+        if file:
+            # Создаем уникальное имя файла
+            filename = secure_filename(file.filename)
+            unique_filename = f"{uuid.uuid4()}_{filename}"
+            file_path = os.path.join('uploads', unique_filename)
+            
+            # Создаем директорию если не существует
+            os.makedirs('uploads', exist_ok=True)
+            
+            # Сохраняем файл
+            file.save(file_path)
+            
+            # Создаем запись в базе данных
+            task_file = TaskFile(
+                task_id=task_id,
+                filename=unique_filename,
+                original_filename=filename,
+                file_path=file_path,
+                file_size=os.path.getsize(file_path),
+                mime_type=file.content_type
+            )
+            
+            db.session.add(task_file)
+            db.session.commit()
+            
+            return jsonify(task_file.to_dict()), 201
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"Ошибка загрузки файла: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/files/<int:file_id>', methods=['DELETE'])
+@login_required
+def delete_file(file_id):
+    """Удаление файла"""
+    try:
+        file = TaskFile.query.get_or_404(file_id)
+        
+        # Удаляем файл с диска
+        if os.path.exists(file.file_path):
+            os.remove(file.file_path)
+            
+        # Удаляем запись из базы данных
+        db.session.delete(file)
+        db.session.commit()
+        
+        return jsonify({'message': 'File deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Ошибка удаления файла: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/files/<int:file_id>/download', methods=['GET'])
+@login_required
+def download_file_duplicate(file_id):
+    """Скачивание файла"""
+    try:
+        file = TaskFile.query.get_or_404(file_id)
+        
+        if not os.path.exists(file.file_path):
+            return jsonify({'error': 'File not found'}), 404
+            
+        return send_file(file.file_path, as_attachment=True, download_name=file.original_filename)
+        
+    except Exception as e:
+        print(f"Ошибка скачивания файла: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/tasks/<int:task_id>/archive', methods=['POST'])
@@ -251,44 +345,9 @@ def get_stats():
 
 # File upload endpoints
 @app.route('/api/tasks/<int:task_id>/files', methods=['POST'])
-def upload_file(task_id):
+def upload_file_duplicate(task_id):
     """Загрузка файла для задачи"""
-    try:
-        task = Task.query.get_or_404(task_id)
-        
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
-        
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        # Create uploads directory if it doesn't exist
-        upload_dir = os.path.join('uploads', str(task_id))
-        os.makedirs(upload_dir, exist_ok=True)
-        
-        # Save file
-        filename = f"{datetime.utcnow().timestamp()}_{file.filename}"
-        file_path = os.path.join(upload_dir, filename)
-        file.save(file_path)
-        
-        # Save file info to database
-        task_file = TaskFile(
-            task_id=task_id,
-            filename=filename,
-            original_filename=file.filename,
-            file_path=file_path,
-            file_size=os.path.getsize(file_path),
-            mime_type=file.content_type
-        )
-        
-        db.session.add(task_file)
-        db.session.commit()
-        
-        return jsonify(task_file.to_dict()), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+    pass  # Duplicate endpoint removed
 
 @app.route('/api/tasks/<int:task_id>/files', methods=['GET'])
 def get_task_files(task_id):
@@ -300,42 +359,10 @@ def get_task_files(task_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/files/<int:file_id>/download', methods=['GET'])
-def download_file(file_id):
-    """Скачивание файла"""
-    try:
-        task_file = TaskFile.query.get_or_404(file_id)
-        
-        if not os.path.exists(task_file.file_path):
-            return jsonify({'error': 'File not found'}), 404
-        
-        from flask import send_file
-        return send_file(
-            task_file.file_path,
-            as_attachment=True,
-            download_name=task_file.original_filename
-        )
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @app.route('/api/files/<int:file_id>', methods=['DELETE'])
-def delete_file(file_id):
+def delete_file_duplicate(file_id):
     """Удаление файла"""
-    try:
-        task_file = TaskFile.query.get_or_404(file_id)
-        
-        # Delete physical file
-        if os.path.exists(task_file.file_path):
-            os.remove(task_file.file_path)
-        
-        # Delete from database
-        db.session.delete(task_file)
-        db.session.commit()
-        
-        return jsonify({'message': 'File deleted successfully'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+    pass  # Duplicate endpoint removed
 
 if __name__ == '__main__':
     with app.app_context():

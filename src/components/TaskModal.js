@@ -381,7 +381,7 @@ const FileActionButton = styled.button`
 const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState(task?.files || []);
   const [isDragOver, setIsDragOver] = useState(false);
 
   if (!task) {
@@ -456,6 +456,26 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
     return new Date(date).toLocaleString('ru-RU');
   };
 
+  const getProgressColor = (progress) => {
+    switch (progress) {
+      case 'not_started': return '#6c757d';
+      case 'in_progress': return '#007bff';
+      case 'testing': return '#ffc107';
+      case 'completed': return '#28a745';
+      default: return '#6c757d';
+    }
+  };
+
+  const getProgressText = (progress) => {
+    switch (progress) {
+      case 'not_started': return 'Не начато';
+      case 'in_progress': return 'В работе';
+      case 'testing': return 'Тестирование';
+      case 'completed': return 'Завершено';
+      default: return 'Не указано';
+    }
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high': return '#e74c3c';
@@ -474,9 +494,79 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
     }
   };
 
-  const handleFileUpload = (event) => {
+  const handleFileDelete = async (fileId) => {
+    if (window.confirm('Удалить этот файл?')) {
+      try {
+        const response = await fetch(`/api/files/${fileId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          setFiles(prev => prev.filter(file => file.id !== fileId));
+        } else {
+          console.error('Ошибка удаления файла');
+          alert('Ошибка удаления файла');
+        }
+      } catch (error) {
+        console.error('Ошибка удаления файла:', error);
+        alert('Ошибка удаления файла');
+      }
+    }
+  };
+
+  const handleFileDownload = async (fileId, filename) => {
+    try {
+      const response = await fetch(`/api/files/${fileId}/download`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        console.error('Ошибка скачивания файла');
+        alert('Ошибка скачивания файла');
+      }
+    } catch (error) {
+      console.error('Ошибка скачивания файла:', error);
+      alert('Ошибка скачивания файла');
+    }
+  };
+
+  const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event.target.files);
-    setFiles(prev => [...prev, ...uploadedFiles]);
+    
+    for (const file of uploadedFiles) {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const response = await fetch(`/api/tasks/${task.id}/files`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+        
+        if (response.ok) {
+          const uploadedFile = await response.json();
+          setFiles(prev => [...prev, uploadedFile]);
+        } else {
+          console.error('Ошибка загрузки файла:', file.name);
+          alert(`Ошибка загрузки файла: ${file.name}`);
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки файла:', error);
+        alert(`Ошибка загрузки файла: ${file.name}`);
+      }
+    }
   };
 
   const handleDragOver = (event) => {
@@ -565,11 +655,43 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
 
               <MetaItem>
                 <MetaIcon>
+                  <FiTrendingUp />
+                </MetaIcon>
+                <MetaContent>
+                  <MetaLabel>Степень готовности</MetaLabel>
+                  <MetaValue style={{ color: getProgressColor(task.progress) }}>
+                    {getProgressText(task.progress)}
+                  </MetaValue>
+                </MetaContent>
+              </MetaItem>
+
+              <MetaItem>
+                <MetaIcon>
                   <FiCalendar />
                 </MetaIcon>
                 <MetaContent>
                   <MetaLabel>Срок выполнения</MetaLabel>
                   <MetaValue>{formatDate(task.dueDate)}</MetaValue>
+                </MetaContent>
+              </MetaItem>
+
+              <MetaItem>
+                <MetaIcon>
+                  <FiClock />
+                </MetaIcon>
+                <MetaContent>
+                  <MetaLabel>Оценка времени</MetaLabel>
+                  <MetaValue>{task.estimatedHours ? `${task.estimatedHours} ч` : 'Не указано'}</MetaValue>
+                </MetaContent>
+              </MetaItem>
+
+              <MetaItem>
+                <MetaIcon>
+                  <FiActivity />
+                </MetaIcon>
+                <MetaContent>
+                  <MetaLabel>Фактическое время</MetaLabel>
+                  <MetaValue>{task.actualHours ? `${task.actualHours} ч` : '0 ч'}</MetaValue>
                 </MetaContent>
               </MetaItem>
 
@@ -612,43 +734,32 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
             </Section>
           )}
 
-          {task.serverAccess && (
+          {(task.serverIp || task.serverPassword) && (
             <Section>
               <SectionTitle>
                 <FiServer />
-                Доступ к серверу
+                Данные сервера
               </SectionTitle>
               <SectionContent>
-                <CodeContainer>
-                  <CodeBlock>{task.serverAccess}</CodeBlock>
-                  <CopyButton onClick={() => copyToClipboard(task.serverAccess)}>
-                    <FiCopy />
-                  </CopyButton>
-                </CodeContainer>
-              </SectionContent>
-            </Section>
-          )}
-
-          {task.password && (
-            <Section>
-              <SectionTitle>
-                <FiKey />
-                Пароль
-              </SectionTitle>
-              <SectionContent>
-                <PasswordContainer>
-                  <PasswordInput
-                    type={showPassword ? 'text' : 'password'}
-                    value={task.password}
-                    readOnly
-                  />
-                  <ToggleButton onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <FiEyeOff /> : <FiEye />}
-                  </ToggleButton>
-                  <ActionButton onClick={() => copyToClipboard(task.password)}>
-                    <FiCopy />
-                  </ActionButton>
-                </PasswordContainer>
+                {task.serverIp && (
+                  <CodeContainer>
+                    <CodeBlock>IP: {task.serverIp}</CodeBlock>
+                    <CopyButton onClick={() => copyToClipboard(task.serverIp)}>
+                      <FiCopy />
+                    </CopyButton>
+                  </CodeContainer>
+                )}
+                {task.serverPassword && (
+                  <CodeContainer style={{ marginTop: '10px' }}>
+                    <CodeBlock>Пароль SSH: {showPassword ? task.serverPassword : '••••••••'}</CodeBlock>
+                    <PasswordToggle onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? <FiEyeOff /> : <FiEye />}
+                    </PasswordToggle>
+                    <CopyButton onClick={() => copyToClipboard(task.serverPassword)}>
+                      <FiCopy />
+                    </CopyButton>
+                  </CodeContainer>
+                )}
               </SectionContent>
             </Section>
           )}
@@ -713,21 +824,21 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
 
               {files.length > 0 && (
                 <FileList>
-                  {files.map((file, index) => (
-                    <FileItem key={index}>
+                  {files.map((file) => (
+                    <FileItem key={file.id}>
                       <FileIcon>
                         <FiFile />
                       </FileIcon>
                       <FileInfo>
-                        <FileName>{file.name}</FileName>
-                        <FileSize>{(file.size / 1024).toFixed(1)} KB</FileSize>
+                        <FileName>{file.originalFilename}</FileName>
+                        <FileSize>{(file.fileSize / 1024).toFixed(1)} KB</FileSize>
                       </FileInfo>
                       <FileActions>
-                        <FileActionButton onClick={() => downloadFile(file)}>
+                        <FileActionButton onClick={() => handleFileDownload(file.id, file.originalFilename)}>
                           <FiDownload />
                         </FileActionButton>
-                        <FileActionButton onClick={() => removeFile(index)}>
-                          <FiX />
+                        <FileActionButton onClick={() => handleFileDelete(file.id)}>
+                          <FiTrash2 />
                         </FileActionButton>
                       </FileActions>
                     </FileItem>

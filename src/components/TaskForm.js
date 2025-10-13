@@ -163,13 +163,16 @@ const TaskForm = ({ onSave, onCancel, task = null }) => {
     title: task?.title || '',
     description: task?.description || '',
     priority: task?.priority || 'medium',
+    progress: task?.progress || 'not_started',
     startDate: task?.startDate ? new Date(task.startDate).toISOString().split('T')[0] : '',
     dueDate: task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
     gitRepository: task?.gitRepository || '',
-    serverAccess: task?.serverAccess || '',
-    password: task?.password || '',
+    serverIp: task?.serverIp || '',
+    serverPassword: task?.serverPassword || '',
     sshKey: task?.sshKey || '',
-    technicalSpec: task?.technicalSpec || ''
+    technicalSpec: task?.technicalSpec || '',
+    estimatedHours: task?.estimatedHours || '',
+    actualHours: task?.actualHours || 0
   });
 
   const handleChange = (e) => {
@@ -249,6 +252,20 @@ const TaskForm = ({ onSave, onCancel, task = null }) => {
             </FormGroup>
 
             <FormGroup>
+              <Label>Степень готовности</Label>
+              <Select
+                name="progress"
+                value={formData.progress}
+                onChange={handleChange}
+              >
+                <option value="not_started">Не начато</option>
+                <option value="in_progress">В работе</option>
+                <option value="testing">Тестирование</option>
+                <option value="completed">Завершено</option>
+              </Select>
+            </FormGroup>
+
+            <FormGroup>
               <Label>Дата начала</Label>
               <Input
                 type="date"
@@ -281,24 +298,24 @@ const TaskForm = ({ onSave, onCancel, task = null }) => {
           </FormGroup>
 
           <FormGroup>
-            <Label>Доступ к серверу</Label>
+            <Label>IP адрес сервера</Label>
             <Input
               type="text"
-              name="serverAccess"
-              value={formData.serverAccess}
+              name="serverIp"
+              value={formData.serverIp}
               onChange={handleChange}
-              placeholder="ssh://user@server.com:22"
+              placeholder="192.168.1.100"
             />
           </FormGroup>
 
           <FormGroup>
-            <Label>Пароль</Label>
+            <Label>Пароль SSH</Label>
             <Input
               type="password"
-              name="password"
-              value={formData.password}
+              name="serverPassword"
+              value={formData.serverPassword}
               onChange={handleChange}
-              placeholder="Пароль для доступа"
+              placeholder="Пароль для SSH подключения"
             />
           </FormGroup>
 
@@ -323,6 +340,34 @@ const TaskForm = ({ onSave, onCancel, task = null }) => {
               rows={4}
             />
           </FormGroup>
+
+          <FormRow>
+            <FormGroup>
+              <Label>Оценка времени (часы)</Label>
+              <Input
+                type="number"
+                name="estimatedHours"
+                value={formData.estimatedHours}
+                onChange={handleChange}
+                placeholder="8"
+                min="0"
+                step="0.5"
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Фактическое время (часы)</Label>
+              <Input
+                type="number"
+                name="actualHours"
+                value={formData.actualHours}
+                onChange={handleChange}
+                placeholder="0"
+                min="0"
+                step="0.5"
+              />
+            </FormGroup>
+          </FormRow>
 
           <ButtonGroup>
             <Button type="button" onClick={onCancel}>

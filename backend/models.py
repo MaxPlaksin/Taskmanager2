@@ -64,13 +64,16 @@ class Task(db.Model):
     description = db.Column(db.Text)
     status = db.Column(db.String(20), default='active')
     priority = db.Column(db.String(20), default='medium')
+    progress = db.Column(db.String(20), default='not_started')  # not_started, in_progress, testing, completed
     start_date = db.Column(db.DateTime)
     due_date = db.Column(db.DateTime)
     git_repository = db.Column(db.String(500))
-    server_access = db.Column(db.String(500))
-    password = db.Column(db.String(200))
+    server_ip = db.Column(db.String(100))  # IP адрес сервера
+    server_password = db.Column(db.String(200))  # Пароль для SSH
     ssh_key = db.Column(db.Text)
     technical_spec = db.Column(db.Text)
+    estimated_hours = db.Column(db.Float)  # Оценка времени в часах
+    actual_hours = db.Column(db.Float, default=0)  # Фактическое время в часах
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -85,13 +88,16 @@ class Task(db.Model):
             'description': self.description,
             'status': self.status,
             'priority': self.priority,
+            'progress': self.progress,
             'startDate': self.start_date.isoformat() if self.start_date else None,
             'dueDate': self.due_date.isoformat() if self.due_date else None,
             'gitRepository': self.git_repository,
-            'serverAccess': self.server_access,
-            'password': self.password,
+            'serverIp': self.server_ip,
+            'serverPassword': self.server_password,
             'sshKey': self.ssh_key,
             'technicalSpec': self.technical_spec,
+            'estimatedHours': self.estimated_hours,
+            'actualHours': self.actual_hours,
             'createdAt': self.created_at.isoformat(),
             'updatedAt': self.updated_at.isoformat(),
             'assigneeId': self.assignee_id,
