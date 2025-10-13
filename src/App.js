@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import TaskPanel from './components/TaskPanel';
-import CalendarPanel from './components/CalendarPanel';
-import TaskDetails from './components/TaskDetails';
+import Sidebar from './components/Sidebar';
+import Dashboard from './components/Dashboard';
+import Projects from './components/Projects';
+import TaskModal from './components/TaskModal';
+import TaskForm from './components/TaskForm';
+import Login from './components/Login';
+import UserInfo from './components/UserInfo';
 import { TaskProvider } from './contexts/TaskContext';
 
 const AppContainer = styled.div`
@@ -11,149 +15,268 @@ const AppContainer = styled.div`
   background-color: #f5f5f5;
 `;
 
-const LeftPanel = styled.div`
-  width: 350px;
-  background: white;
-  border-right: 1px solid #e0e0e0;
+const Header = styled.div`
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px 24px;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 `;
 
-const CenterPanel = styled.div`
+const AppTitle = styled.h1`
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+`;
+
+const MainContent = styled.div`
   flex: 1;
-  background: white;
-  border-right: 1px solid #e0e0e0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 `;
 
-const RightPanel = styled.div`
-  width: 400px;
-  background: white;
+const ContentArea = styled.div`
+  flex: 1;
+  overflow: hidden;
+`;
+
+const LoadingContainer = styled.div`
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+`;
+
+const LoadingText = styled.div`
+  font-size: 18px;
+  color: #666;
 `;
 
 function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedTask, setSelectedTask] = useState(null);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showTaskForm, setShowTaskForm] = useState(false);
   const [tasks, setTasks] = useState([]);
-  const [showArchived, setShowArchived] = useState(false);
 
-  // Загрузка задач при инициализации
+  // Проверка авторизации при загрузке
   useEffect(() => {
-    // Здесь будет загрузка задач из API
-    const mockTasks = [
-      {
-        id: 1,
-        title: 'Разработка API для пользователей',
-        description: 'Создать REST API для управления пользователями',
-        status: 'active',
-        priority: 'high',
-        dueDate: new Date('2024-01-15'),
-        gitRepository: 'https://github.com/user/api-project',
-        serverAccess: 'ssh://user@server.com:22',
-        password: 'encrypted_password_123',
-        sshKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC...',
-        technicalSpec: 'Создать API endpoints для CRUD операций с пользователями. Использовать JWT для аутентификации. Поддержка пагинации и фильтрации.',
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-10')
-      },
-      {
-        id: 2,
-        title: 'Интеграция с внешним сервисом',
-        description: 'Подключить внешний API для получения данных',
-        status: 'active',
-        priority: 'medium',
-        dueDate: new Date('2024-01-20'),
-        gitRepository: 'https://github.com/user/integration-service',
-        serverAccess: 'ssh://user@integration-server.com:22',
-        password: 'encrypted_password_456',
-        sshKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQD...',
-        technicalSpec: 'Интегрировать с внешним API. Обработать ошибки и таймауты. Добавить кэширование для оптимизации производительности.',
-        createdAt: new Date('2024-01-05'),
-        updatedAt: new Date('2024-01-12')
-      },
-      {
-        id: 3,
-        title: 'Рефакторинг старого кода',
-        description: 'Улучшить архитектуру существующего кода',
-        status: 'completed',
-        priority: 'low',
-        dueDate: new Date('2024-01-10'),
-        gitRepository: 'https://github.com/user/legacy-refactor',
-        serverAccess: 'ssh://user@legacy-server.com:22',
-        password: 'encrypted_password_789',
-        sshKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQE...',
-        technicalSpec: 'Провести рефакторинг устаревшего кода. Улучшить читаемость и производительность. Добавить unit тесты.',
-        createdAt: new Date('2023-12-20'),
-        updatedAt: new Date('2024-01-10')
-      }
-    ];
-    setTasks(mockTasks);
+    checkAuth();
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        loadTasks();
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Ошибка проверки авторизации:', error);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const tasksData = await response.json();
+        setTasks(tasksData);
+      } else {
+        console.error('Ошибка загрузки задач');
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки задач:', error);
+    }
+  };
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    loadTasks();
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setTasks([]);
+  };
 
   const handleTaskSelect = (task) => {
     setSelectedTask(task);
+    setShowTaskModal(true);
   };
 
-  const handleTaskUpdate = (updatedTask) => {
-    setTasks(tasks.map(task => 
-      task.id === updatedTask.id ? updatedTask : task
-    ));
-    if (selectedTask && selectedTask.id === updatedTask.id) {
-      setSelectedTask(updatedTask);
+  const handleTaskUpdate = async (updatedTask) => {
+    try {
+      const response = await fetch(`/api/tasks/${updatedTask.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updatedTask)
+      });
+
+      if (response.ok) {
+        const taskData = await response.json();
+        setTasks(tasks.map(task => 
+          task.id === updatedTask.id ? taskData : task
+        ));
+        if (selectedTask && selectedTask.id === updatedTask.id) {
+          setSelectedTask(taskData);
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка обновления задачи:', error);
     }
   };
 
-  const handleTaskCreate = (newTask) => {
-    const task = {
-      ...newTask,
-      id: Date.now(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    setTasks([...tasks, task]);
-  };
+  const handleTaskCreate = async (newTask) => {
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(newTask)
+      });
 
-  const handleTaskArchive = (taskId) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, status: 'archived' } : task
-    ));
-    if (selectedTask && selectedTask.id === taskId) {
-      setSelectedTask(null);
+      if (response.ok) {
+        const taskData = await response.json();
+        setTasks([...tasks, taskData]);
+        setShowTaskForm(false);
+      }
+    } catch (error) {
+      console.error('Ошибка создания задачи:', error);
     }
   };
 
-  const activeTasks = tasks.filter(task => task.status === 'active');
-  const archivedTasks = tasks.filter(task => task.status === 'archived');
+  const handleTaskDelete = async (taskId) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        setTasks(tasks.filter(task => task.id !== taskId));
+        if (selectedTask && selectedTask.id === taskId) {
+          setSelectedTask(null);
+          setShowTaskModal(false);
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка удаления задачи:', error);
+    }
+  };
+
+  const handleCreateTask = () => {
+    // Проверяем права пользователя
+    if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
+      alert('У вас нет прав для создания задач');
+      return;
+    }
+    setShowTaskForm(true);
+  };
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return (
+          <Dashboard
+            tasks={tasks}
+            onTaskSelect={handleTaskSelect}
+            selectedTask={selectedTask}
+            onCreateTask={handleCreateTask}
+            user={user}
+          />
+        );
+      case 'projects':
+        return (
+          <Projects
+            tasks={tasks}
+            onTaskSelect={handleTaskSelect}
+            selectedTask={selectedTask}
+            onCreateTask={handleCreateTask}
+            user={user}
+          />
+        );
+      default:
+        return (
+          <Dashboard
+            tasks={tasks}
+            onTaskSelect={handleTaskSelect}
+            selectedTask={selectedTask}
+            onCreateTask={handleCreateTask}
+            user={user}
+          />
+        );
+    }
+  };
+
+  // Показываем загрузку
+  if (loading) {
+    return (
+      <LoadingContainer>
+        <LoadingText>Загрузка...</LoadingText>
+      </LoadingContainer>
+    );
+  }
+
+  // Показываем форму входа если пользователь не авторизован
+  if (!user) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   return (
-    <TaskProvider value={{ tasks, handleTaskUpdate, handleTaskCreate, handleTaskArchive }}>
+    <TaskProvider value={{ tasks, handleTaskUpdate, handleTaskCreate, handleTaskDelete }}>
       <AppContainer>
-        <LeftPanel>
-          <TaskPanel 
-            tasks={showArchived ? archivedTasks : activeTasks}
-            onTaskSelect={handleTaskSelect}
-            selectedTask={selectedTask}
-            showArchived={showArchived}
-            onToggleArchived={() => setShowArchived(!showArchived)}
-          />
-        </LeftPanel>
+        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} user={user} />
+        <MainContent>
+          <Header>
+            <AppTitle>Task Manager v2</AppTitle>
+            <UserInfo user={user} onLogout={handleLogout} />
+          </Header>
+          <ContentArea>
+            {renderContent()}
+          </ContentArea>
+        </MainContent>
         
-        <CenterPanel>
-          <CalendarPanel 
-            tasks={activeTasks}
-            onTaskSelect={handleTaskSelect}
-            selectedTask={selectedTask}
-          />
-        </CenterPanel>
-        
-        <RightPanel>
-          <TaskDetails 
+        {showTaskModal && (
+          <TaskModal
             task={selectedTask}
+            onClose={() => setShowTaskModal(false)}
             onTaskUpdate={handleTaskUpdate}
+            onTaskDelete={handleTaskDelete}
+            user={user}
           />
-        </RightPanel>
+        )}
+        
+        {showTaskForm && (
+          <TaskForm
+            onSave={handleTaskCreate}
+            onCancel={() => setShowTaskForm(false)}
+            user={user}
+          />
+        )}
       </AppContainer>
     </TaskProvider>
   );
