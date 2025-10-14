@@ -16,28 +16,6 @@ const SettingsContainer = styled.div`
   padding: 30px;
   max-width: 800px;
   margin: 0 auto;
-  height: calc(100vh - 60px);
-  overflow-y: auto;
-  overflow-x: hidden;
-  
-  /* Кастомный скроллбар */
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
-  }
-  
-  &::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-  }
 `;
 
 const SettingsHeader = styled.div`

@@ -332,6 +332,25 @@ const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) =>
     onTaskSelect(event.resource);
   };
 
+  const handleSelectSlot = (slotInfo) => {
+    const selectedDate = slotInfo.start;
+    const tasksOnDate = tasks.filter(task => {
+      const taskStartDate = task.startDate ? new Date(task.startDate) : new Date(task.createdAt);
+      const taskDueDate = task.dueDate ? new Date(task.dueDate) : new Date(task.createdAt);
+      
+      // Проверяем, попадает ли выбранная дата в диапазон задачи
+      return selectedDate >= taskStartDate && selectedDate <= taskDueDate;
+    });
+
+    if (tasksOnDate.length > 0) {
+      // Если есть задачи на эту дату, показываем первую
+      onTaskSelect(tasksOnDate[0]);
+    } else {
+      // Если нет задач, создаем новую с выбранной датой
+      onCreateTask(selectedDate);
+    }
+  };
+
   const eventStyleGetter = (event) => {
     const task = event.resource;
     const startDate = task.startDate ? new Date(task.startDate) : new Date();
@@ -429,6 +448,7 @@ const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) =>
               onNavigate={setDate}
               onView={setView}
               onSelectEvent={handleSelectEvent}
+              onSelectSlot={handleSelectSlot}
               selectable
               eventPropGetter={eventStyleGetter}
               components={{

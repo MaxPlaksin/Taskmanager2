@@ -47,6 +47,7 @@ function App() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
   const [tasks, setTasks] = useState([]);
 
   // Проверка авторизации при загрузке
@@ -196,13 +197,14 @@ function App() {
     }
   };
 
-  const handleCreateTask = () => {
+  const handleCreateTask = (selectedDate = null) => {
     // Проверяем права пользователя
     if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
       alert('У вас нет прав для создания задач');
       return;
     }
     setShowTaskForm(true);
+    setSelectedDate(selectedDate);
   };
 
   const renderContent = () => {
@@ -286,6 +288,7 @@ function App() {
             onSave={handleTaskCreate}
             onCancel={() => setShowTaskForm(false)}
             user={user}
+            selectedDate={selectedDate}
           />
         )}
       </AppContainer>

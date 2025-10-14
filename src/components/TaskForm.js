@@ -158,14 +158,16 @@ const Button = styled.button`
   `}
 `;
 
-const TaskForm = ({ onSave, onCancel, task = null }) => {
+const TaskForm = ({ onSave, onCancel, task = null, selectedDate = null }) => {
   const [formData, setFormData] = useState({
     title: task?.title || '',
     description: task?.description || '',
     priority: task?.priority || 'medium',
     progress: task?.progress || 'not_started',
-    startDate: task?.startDate ? new Date(task.startDate).toISOString().split('T')[0] : '',
-    dueDate: task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+    startDate: task?.startDate ? new Date(task.startDate).toISOString().split('T')[0] : 
+              (selectedDate ? new Date(selectedDate).toISOString().split('T')[0] : ''),
+    dueDate: task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : 
+             (selectedDate ? new Date(selectedDate).toISOString().split('T')[0] : ''),
     gitRepository: task?.gitRepository || '',
     serverIp: task?.serverIp || '',
     serverPassword: task?.serverPassword || '',
