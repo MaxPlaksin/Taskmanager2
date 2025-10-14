@@ -16,6 +16,7 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
+    avatar_path = db.Column(db.String(500))  # Путь к аватару
     
     # Связь с задачами
     assigned_tasks = db.relationship('Task', backref='assignee', lazy=True, foreign_keys='Task.assignee_id')
@@ -30,7 +31,8 @@ class User(UserMixin, db.Model):
             'fullName': self.full_name,
             'isActive': self.is_active,
             'createdAt': self.created_at.isoformat(),
-            'lastLogin': self.last_login.isoformat() if self.last_login else None
+            'lastLogin': self.last_login.isoformat() if self.last_login else None,
+            'avatarPath': self.avatar_path
         }
     
     def has_role(self, role):

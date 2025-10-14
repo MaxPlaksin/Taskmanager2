@@ -1,9 +1,12 @@
 from flask import Blueprint, request, jsonify, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from datetime import datetime
-from models import db, User
 from functools import wraps
+import os
+import uuid
+from models import db, User
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -59,13 +62,55 @@ def logout():
     logout_user()
     return jsonify({'message': 'Успешный выход из системы'}), 200
 
-@auth_bp.route('/api/auth/me', methods=['GET'])
+@auth_bp.route('/api/auth/profile', methods=['PUT'])
 @login_required
-def get_current_user():
-    """Получение информации о текущем пользователе"""
-    return jsonify({
-        'user': current_user.to_dict()
-    }), 200
+def update_profile():
+    """Обновление профиля пользователя"""
+    try:
+        data = request.form
+        user = current_user
+        
+        # Обновляем основные поля
+        if data.get('fullName'):
+            user.full_name = data.get('fullName')
+        if data.get('email'):
+            user.email = data.get('email')
+        if data.get('username'):
+            user.username = data.get('username')
+        
+        # Обновляем пароль если указан
+        if data.get('currentPassword') and data.get('newPassword'):
+            if check_password_hash(user.password_hash, data.get('currentPassword')):
+                user.password_hash = generate_password_hash(data.get('newPassword'))
+            else:
+                return jsonify({'error': 'Неверный текущий пароль'}), 400
+        
+        # Обрабатываем аватар
+        if 'avatar' in request.files:
+            avatar_file = request.files['avatar']
+            if avatar_file.filename:
+                # Сохраняем аватар
+                filename = secure_filename(avatar_file.filename)
+                unique_filename = f"{uuid.uuid4()}_{filename}"
+                avatar_path = os.path.join('uploads', 'avatars', unique_filename)
+                
+                # Создаем директорию если не существует
+                os.makedirs(os.path.dirname(avatar_path), exist_ok=True)
+                
+                # Сохраняем файл
+                avatar_file.save(avatar_path)
+                
+                # Обновляем путь к аватару в профиле пользователя
+                user.avatar_path = avatar_path
+        
+        db.session.commit()
+        
+        return jsonify({'message': 'Профиль успешно обновлен', 'user': user.to_dict()})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Ошибка обновления профиля: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @auth_bp.route('/api/auth/register', methods=['POST'])
 @admin_required

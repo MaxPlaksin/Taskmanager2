@@ -19,7 +19,9 @@ import {
   FiUpload,
   FiDownload,
   FiFile,
-  FiPaperclip
+  FiPaperclip,
+  FiActivity,
+  FiTrendingUp
 } from 'react-icons/fi';
 import TaskForm from './TaskForm';
 

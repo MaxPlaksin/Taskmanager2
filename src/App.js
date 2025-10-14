@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Projects from './components/Projects';
+import Settings from './components/Settings';
 import TaskModal from './components/TaskModal';
 import TaskForm from './components/TaskForm';
 import Login from './components/Login';
@@ -100,6 +101,10 @@ function App() {
   const handleLogin = (userData) => {
     setUser(userData);
     loadTasks();
+  };
+
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
   };
 
   const handleLogout = () => {
@@ -220,6 +225,13 @@ function App() {
             selectedTask={selectedTask}
             onCreateTask={handleCreateTask}
             user={user}
+          />
+        );
+      case 'settings':
+        return (
+          <Settings
+            user={user}
+            onUserUpdate={handleUserUpdate}
           />
         );
       default:
