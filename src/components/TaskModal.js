@@ -278,6 +278,23 @@ const ToggleButton = styled.button`
   }
 `;
 
+const PasswordToggle = styled.button`
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+
+  &:hover {
+    color: #333;
+  }
+`;
+
 const FileUploadSection = styled.div`
   margin-top: 16px;
 `;
