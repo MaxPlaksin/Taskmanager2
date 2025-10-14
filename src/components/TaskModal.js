@@ -21,7 +21,9 @@ import {
   FiFile,
   FiPaperclip,
   FiActivity,
-  FiTrendingUp
+  FiTrendingUp,
+  FiCamera,
+  FiImage
 } from 'react-icons/fi';
 import TaskForm from './TaskForm';
 
@@ -402,6 +404,16 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [files, setFiles] = useState(task?.files || []);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [screenshots, setScreenshots] = useState(task?.screenshots || []);
+  const [isScreenshotDragOver, setIsScreenshotDragOver] = useState(false);
+  const [showScreenshotModal, setShowScreenshotModal] = useState(false);
+  const [selectedScreenshot, setSelectedScreenshot] = useState(null);
+  const [showScreenshotForm, setShowScreenshotForm] = useState(false);
+  const [screenshotForm, setScreenshotForm] = useState({
+    title: '',
+    description: '',
+    file: null
+  });
 
   if (!task) {
     return null;
@@ -531,6 +543,163 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
         console.error('Ошибка удаления файла:', error);
         alert('Ошибка удаления файла');
       }
+    }
+  };
+
+  // Функции для скриншотов
+  const handleScreenshotUpload = async (files) => {
+    const imageFiles = Array.from(files).filter(file => 
+      file.type.startsWith('image/')
+    );
+
+    if (imageFiles.length === 0) {
+      alert('Пожалуйста, выберите только изображения');
+      return;
+    }
+
+    for (const file of imageFiles) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('taskId', task.id);
+      formData.append('type', 'screenshot');
+
+      try {
+        const response = await fetch('/api/files/upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const newScreenshot = await response.json();
+          setScreenshots(prev => [...prev, newScreenshot]);
+        } else {
+          console.error('Ошибка при загрузке скриншота');
+        }
+      } catch (error) {
+        console.error('Ошибка при загрузке скриншота:', error);
+      }
+    }
+  };
+
+  const handleScreenshotDragOver = (e) => {
+    e.preventDefault();
+    setIsScreenshotDragOver(true);
+  };
+
+  const handleScreenshotDragLeave = (e) => {
+    e.preventDefault();
+    setIsScreenshotDragOver(false);
+  };
+
+  const handleScreenshotDrop = (e) => {
+    e.preventDefault();
+    setIsScreenshotDragOver(false);
+    const files = e.dataTransfer.files;
+    handleScreenshotUpload(files);
+  };
+
+  const handleScreenshotDelete = async (screenshotId) => {
+    if (window.confirm('Удалить этот скриншот?')) {
+      try {
+        const response = await fetch(`/api/files/${screenshotId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          setScreenshots(prev => prev.filter(screenshot => screenshot.id !== screenshotId));
+        } else {
+          console.error('Ошибка при удалении скриншота');
+        }
+      } catch (error) {
+        console.error('Ошибка при удалении скриншота:', error);
+      }
+    }
+  };
+
+  // Новые функции для улучшенного интерфейса
+  const handleScreenshotClick = (screenshot) => {
+    setSelectedScreenshot(screenshot);
+    setShowScreenshotModal(true);
+  };
+
+  const handleCloseScreenshotModal = () => {
+    setShowScreenshotModal(false);
+    setSelectedScreenshot(null);
+  };
+
+  const handleShowScreenshotForm = () => {
+    setShowScreenshotForm(true);
+    setScreenshotForm({ title: '', description: '', file: null });
+  };
+
+  const handleCloseScreenshotForm = () => {
+    setShowScreenshotForm(false);
+    setScreenshotForm({ title: '', description: '', file: null });
+  };
+
+  const handleScreenshotFormChange = (field, value) => {
+    setScreenshotForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleScreenshotFormSubmit = async () => {
+    if (!screenshotForm.file) {
+      alert('Пожалуйста, выберите файл');
+      return;
+    }
+
+    console.log('Начинаем загрузку скриншота...');
+    console.log('Файл:', screenshotForm.file);
+    console.log('Task ID:', task.id);
+    console.log('Title:', screenshotForm.title);
+    console.log('Description:', screenshotForm.description);
+
+    const formData = new FormData();
+    formData.append('file', screenshotForm.file);
+    formData.append('taskId', task.id);
+    formData.append('type', 'screenshot');
+    formData.append('description', `${screenshotForm.title}|${screenshotForm.description}`);
+
+    console.log('FormData создан, отправляем запрос...');
+
+    try {
+      const response = await fetch('/api/files/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+
+      console.log('Ответ получен:', response.status, response.statusText);
+
+      if (response.ok) {
+        const newScreenshot = await response.json();
+        console.log('Скриншот загружен успешно:', newScreenshot);
+        setScreenshots(prev => [...prev, newScreenshot]);
+        handleCloseScreenshotForm();
+      } else {
+        const errorText = await response.text();
+        console.error('Ошибка при загрузке скриншота:', response.status, errorText);
+        alert(`Ошибка при загрузке скриншота: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке скриншота:', error);
+      alert(`Ошибка при загрузке скриншота: ${error.message}`);
+    }
+  };
+
+  const handleScreenshotFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      setScreenshotForm(prev => ({
+        ...prev,
+        file: file
+      }));
+    } else {
+      alert('Пожалуйста, выберите изображение');
     }
   };
 
@@ -866,10 +1035,492 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
               )}
             </SectionContent>
           </Section>
+
+          <ScreenshotSection>
+            <Section>
+              <SectionTitle>
+                <FiCamera />
+                Демонстрация проекта
+              </SectionTitle>
+              <SectionContent>
+                {!showScreenshotForm ? (
+                  <ScreenshotUploadArea
+                    className={isScreenshotDragOver ? 'dragover' : ''}
+                    onDragOver={handleScreenshotDragOver}
+                    onDragLeave={handleScreenshotDragLeave}
+                    onDrop={handleScreenshotDrop}
+                    onClick={handleShowScreenshotForm}
+                  >
+                    <ScreenshotUploadText>
+                      Покажите, как выглядит ваш проект! Добавьте скриншоты готового результата
+                    </ScreenshotUploadText>
+                    <ScreenshotUploadButton>
+                      <FiCamera />
+                      Добавить демонстрацию
+                    </ScreenshotUploadButton>
+                  </ScreenshotUploadArea>
+                ) : (
+                  <ScreenshotForm>
+                    <ScreenshotFormTitle>
+                      <FiCamera />
+                      Добавить демонстрацию проекта
+                    </ScreenshotFormTitle>
+                    
+                    <ScreenshotFormInput
+                      type="text"
+                      placeholder="Название (например: Главная страница, Форма входа, Дашборд)"
+                      value={screenshotForm.title}
+                      onChange={(e) => handleScreenshotFormChange('title', e.target.value)}
+                    />
+                    
+                    <ScreenshotFormTextarea
+                      placeholder="Описание того, что показано на скриншоте..."
+                      value={screenshotForm.description}
+                      onChange={(e) => handleScreenshotFormChange('description', e.target.value)}
+                    />
+                    
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleScreenshotFileSelect}
+                      style={{ marginBottom: '12px' }}
+                    />
+                    
+                    {screenshotForm.file && (
+                      <div style={{ marginBottom: '12px', fontSize: '14px', color: '#666' }}>
+                        Выбран файл: {screenshotForm.file.name}
+                      </div>
+                    )}
+                    
+                    <ScreenshotFormButtons>
+                      <ScreenshotFormButton 
+                        className="secondary"
+                        onClick={handleCloseScreenshotForm}
+                      >
+                        Отмена
+                      </ScreenshotFormButton>
+                      <ScreenshotFormButton 
+                        className="primary"
+                        onClick={handleScreenshotFormSubmit}
+                      >
+                        Загрузить
+                      </ScreenshotFormButton>
+                    </ScreenshotFormButtons>
+                  </ScreenshotForm>
+                )}
+                
+                {screenshots.length > 0 && (
+                  <ScreenshotGrid>
+                    {screenshots.map((screenshot) => {
+                      const [title, description] = screenshot.description ? screenshot.description.split('|') : ['', ''];
+                      return (
+                        <ScreenshotItem 
+                          key={screenshot.id} 
+                          className="has-image"
+                          onClick={() => handleScreenshotClick(screenshot)}
+                        >
+                          <ScreenshotImage 
+                            src={`/api/files/${screenshot.id}/download`}
+                            alt={title || 'Скриншот'}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                          <ScreenshotPlaceholder style={{ display: 'none' }}>
+                            <FiImage />
+                            <span>Ошибка загрузки</span>
+                          </ScreenshotPlaceholder>
+                          
+                          {(title || description) && (
+                            <ScreenshotDescription>
+                              {title && <ScreenshotTitle>{title}</ScreenshotTitle>}
+                              {description && <ScreenshotText>{description}</ScreenshotText>}
+                            </ScreenshotDescription>
+                          )}
+                          
+                          <ScreenshotActions>
+                            <ScreenshotActionButton 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleScreenshotClick(screenshot);
+                              }}
+                              title="Просмотр"
+                            >
+                              <FiEye />
+                            </ScreenshotActionButton>
+                            <ScreenshotActionButton 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleScreenshotDelete(screenshot.id);
+                              }}
+                              title="Удалить"
+                            >
+                              <FiTrash2 />
+                            </ScreenshotActionButton>
+                          </ScreenshotActions>
+                        </ScreenshotItem>
+                      );
+                    })}
+                  </ScreenshotGrid>
+                )}
+              </SectionContent>
+            </Section>
+          </ScreenshotSection>
         </ModalBody>
       </ModalContent>
+      
+      {/* Модальное окно для просмотра скриншотов */}
+      {showScreenshotModal && selectedScreenshot && (
+        <ScreenshotModal onClick={handleCloseScreenshotModal}>
+          <ScreenshotModalContent onClick={(e) => e.stopPropagation()}>
+            <ScreenshotModalClose onClick={handleCloseScreenshotModal}>
+              <FiX />
+            </ScreenshotModalClose>
+            
+            <ScreenshotModalImage 
+              src={`/api/files/${selectedScreenshot.id}/download`}
+              alt={selectedScreenshot.originalFilename}
+            />
+            
+            <ScreenshotModalInfo>
+              <ScreenshotModalTitle>
+                {selectedScreenshot.originalFilename}
+              </ScreenshotModalTitle>
+              {selectedScreenshot.description && (
+                <ScreenshotModalDescription>
+                  {selectedScreenshot.description}
+                </ScreenshotModalDescription>
+              )}
+            </ScreenshotModalInfo>
+          </ScreenshotModalContent>
+        </ScreenshotModal>
+      )}
     </ModalOverlay>
   );
 };
+
+// Стили для секции скриншотов
+const ScreenshotSection = styled.div`
+  margin-top: 24px;
+`;
+
+const ScreenshotGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+`;
+
+const ScreenshotItem = styled.div`
+  position: relative;
+  border: 2px dashed #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  background: #f9f9f9;
+  transition: all 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #4a90e2;
+    background: #f0f7ff;
+  }
+
+  &.has-image {
+    border: 2px solid #4a90e2;
+    background: white;
+    padding: 0;
+    overflow: hidden;
+  }
+`;
+
+const ScreenshotImage = styled.img`
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 6px;
+`;
+
+const ScreenshotPlaceholder = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+`;
+
+const ScreenshotActions = styled.div`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+
+  ${ScreenshotItem}:hover & {
+    opacity: 1;
+  }
+`;
+
+const ScreenshotActionButton = styled.button`
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.9);
+  }
+`;
+
+const ScreenshotUploadArea = styled.div`
+  border: 2px dashed #4a90e2;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  background: #f0f7ff;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #e3f2fd;
+    border-color: #357abd;
+  }
+
+  &.dragover {
+    background: #e3f2fd;
+    border-color: #357abd;
+    transform: scale(1.02);
+  }
+`;
+
+const ScreenshotUploadText = styled.div`
+  color: #4a90e2;
+  font-size: 14px;
+  margin-bottom: 12px;
+  font-weight: 500;
+`;
+
+const ScreenshotUploadButton = styled.button`
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #357abd;
+  }
+`;
+
+// Новые стили для улучшенного интерфейса
+const ScreenshotDescription = styled.div`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  color: white;
+  padding: 12px 8px 8px;
+  font-size: 12px;
+  line-height: 1.3;
+  opacity: 0;
+  transition: opacity 0.2s;
+
+  ${ScreenshotItem}:hover & {
+    opacity: 1;
+  }
+`;
+
+const ScreenshotTitle = styled.div`
+  font-weight: 600;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const ScreenshotText = styled.div`
+  font-size: 11px;
+  opacity: 0.9;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
+
+const ScreenshotModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+`;
+
+const ScreenshotModalContent = styled.div`
+  max-width: 90vw;
+  max-height: 90vh;
+  position: relative;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+`;
+
+const ScreenshotModalImage = styled.img`
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  display: block;
+`;
+
+const ScreenshotModalInfo = styled.div`
+  padding: 16px;
+  background: white;
+`;
+
+const ScreenshotModalTitle = styled.h3`
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+`;
+
+const ScreenshotModalDescription = styled.p`
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+`;
+
+const ScreenshotModalClose = styled.button`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.9);
+  }
+`;
+
+const ScreenshotForm = styled.div`
+  background: #f8f9fa;
+  border: 2px dashed #4a90e2;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+`;
+
+const ScreenshotFormTitle = styled.h4`
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const ScreenshotFormInput = styled.input`
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  
+  &:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  }
+`;
+
+const ScreenshotFormTextarea = styled.textarea`
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  min-height: 60px;
+  resize: vertical;
+  margin-bottom: 12px;
+  font-family: inherit;
+  
+  &:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  }
+`;
+
+const ScreenshotFormButtons = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+`;
+
+const ScreenshotFormButton = styled.button`
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &.primary {
+    background: #4a90e2;
+    color: white;
+    
+    &:hover {
+      background: #357abd;
+    }
+  }
+  
+  &.secondary {
+    background: #f5f5f5;
+    color: #666;
+    border: 1px solid #ddd;
+    
+    &:hover {
+      background: #e9e9e9;
+    }
+  }
+`;
 
 export default TaskModal;

@@ -106,7 +106,8 @@ class Task(db.Model):
             'assigneeName': self.assignee.full_name if self.assignee else None,
             'createdBy': self.created_by,
             'creatorName': self.creator.full_name if self.creator else None,
-            'files': [file.to_dict() for file in self.files]
+            'files': [file.to_dict() for file in self.files if file.file_type == 'attachment'],
+            'screenshots': [file.to_dict() for file in self.files if file.file_type == 'screenshot']
         }
     
     def __repr__(self):
@@ -122,6 +123,8 @@ class TaskFile(db.Model):
     file_path = db.Column(db.String(500), nullable=False)
     file_size = db.Column(db.Integer)
     mime_type = db.Column(db.String(100))
+    file_type = db.Column(db.String(50), default='attachment')  # attachment, screenshot
+    description = db.Column(db.Text)  # Описание для скриншотов
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship
@@ -135,6 +138,8 @@ class TaskFile(db.Model):
             'originalFilename': self.original_filename,
             'fileSize': self.file_size,
             'mimeType': self.mime_type,
+            'fileType': self.file_type,
+            'description': self.description,
             'uploadedAt': self.uploaded_at.isoformat()
         }
     
