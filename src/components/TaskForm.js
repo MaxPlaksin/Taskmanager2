@@ -159,15 +159,21 @@ const Button = styled.button`
 `;
 
 const TaskForm = ({ onSave, onCancel, task = null, selectedDate = null }) => {
+  // Функция для безопасного преобразования даты
+  const formatDate = (date) => {
+    if (!date) return '';
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) return '';
+    return dateObj.toISOString().split('T')[0];
+  };
+
   const [formData, setFormData] = useState({
     title: task?.title || '',
     description: task?.description || '',
     priority: task?.priority || 'medium',
     progress: task?.progress || 'not_started',
-    startDate: task?.startDate ? new Date(task.startDate).toISOString().split('T')[0] : 
-              (selectedDate ? new Date(selectedDate).toISOString().split('T')[0] : ''),
-    dueDate: task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : 
-             (selectedDate ? new Date(selectedDate).toISOString().split('T')[0] : ''),
+    startDate: formatDate(task?.startDate) || formatDate(selectedDate) || '',
+    dueDate: formatDate(task?.dueDate) || formatDate(selectedDate) || '',
     gitRepository: task?.gitRepository || '',
     serverIp: task?.serverIp || '',
     serverPassword: task?.serverPassword || '',

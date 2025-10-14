@@ -28,6 +28,11 @@ def manager_or_admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@auth_bp.route('/api/auth/login', methods=['GET'])
+def login_get():
+    """Обработка GET запроса на login (для избежания ошибок браузера)"""
+    return jsonify({'message': 'Use POST method for login'}), 405
+
 @auth_bp.route('/api/auth/login', methods=['POST'])
 def login():
     """Вход в систему"""
