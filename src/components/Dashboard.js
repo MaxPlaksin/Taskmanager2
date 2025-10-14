@@ -242,71 +242,111 @@ const EmptyText = styled.p`
   line-height: 1.5;
 `;
 
-const CustomToolbar = ({ label, onNavigate, onView }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-    <div style={{ display: 'flex', gap: '8px' }}>
-      <button onClick={() => onNavigate('PREV')} style={{ padding: '8px', border: '1px solid #ddd', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>
-        <FiChevronLeft />
-      </button>
-      <button onClick={() => onNavigate('TODAY')} style={{ padding: '8px 16px', border: '1px solid #ddd', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>
-        Сегодня
-      </button>
-      <button onClick={() => onNavigate('NEXT')} style={{ padding: '8px', border: '1px solid #ddd', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>
-        <FiChevronRight />
-      </button>
+
+
+const CustomToolbar = ({ label, onNavigate, onView, currentDate, onDateSelect }) => {
+
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button onClick={() => onNavigate('PREV')} style={{ padding: '8px', border: '1px solid #ddd', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>
+          <FiChevronLeft />
+        </button>
+        
+        <button 
+          onClick={() => {
+            const today = new Date();
+            if (onDateSelect) {
+              onDateSelect(today);
+            }
+            onNavigate('TODAY');
+          }} 
+          style={{ 
+            padding: '8px 16px', 
+            border: '1px solid #ddd', 
+            background: 'white', 
+            borderRadius: '4px', 
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500',
+            color: '#4a90e2',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = '#f0f7ff';
+            e.target.style.borderColor = '#4a90e2';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'white';
+            e.target.style.borderColor = '#ddd';
+          }}
+        >
+          Сегодня
+        </button>
+        
+        <button onClick={() => onNavigate('NEXT')} style={{ padding: '8px', border: '1px solid #ddd', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>
+          <FiChevronRight />
+        </button>
+      </div>
+      
+      <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#333' }}>
+        {label}
+      </h2>
+      
+      <div style={{ display: 'flex', gap: '4px' }}>
+        <button 
+          onClick={() => onView('month')} 
+          style={{ 
+            padding: '8px 12px', 
+            border: '1px solid #ddd', 
+            background: 'white', 
+            color: '#666',
+            borderRadius: '4px 0 0 4px',
+            cursor: 'pointer'
+          }}
+        >
+          Месяц
+        </button>
+        <button 
+          onClick={() => onView('week')} 
+          style={{ 
+            padding: '8px 12px', 
+            border: '1px solid #ddd', 
+            background: 'white', 
+            color: '#666',
+            borderRadius: '0',
+            cursor: 'pointer'
+          }}
+        >
+          Неделя
+        </button>
+        <button 
+          onClick={() => onView('day')} 
+          style={{ 
+            padding: '8px 12px', 
+            border: '1px solid #ddd', 
+            background: 'white', 
+            color: '#666',
+            borderRadius: '0 4px 4px 0',
+            cursor: 'pointer'
+          }}
+        >
+          День
+        </button>
+      </div>
     </div>
-    
-    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#333' }}>
-      {label}
-    </h2>
-    
-    <div style={{ display: 'flex', gap: '4px' }}>
-      <button 
-        onClick={() => onView('month')} 
-        style={{ 
-          padding: '8px 12px', 
-          border: '1px solid #ddd', 
-          background: 'white', 
-          color: '#666',
-          borderRadius: '4px 0 0 4px',
-          cursor: 'pointer'
-        }}
-      >
-        Месяц
-      </button>
-      <button 
-        onClick={() => onView('week')} 
-        style={{ 
-          padding: '8px 12px', 
-          border: '1px solid #ddd', 
-          background: 'white', 
-          color: '#666',
-          borderRadius: '0',
-          cursor: 'pointer'
-        }}
-      >
-        Неделя
-      </button>
-      <button 
-        onClick={() => onView('day')} 
-        style={{ 
-          padding: '8px 12px', 
-          border: '1px solid #ddd', 
-          background: 'white', 
-          color: '#666',
-          borderRadius: '0 4px 4px 0',
-          cursor: 'pointer'
-        }}
-      >
-        День
-      </button>
-    </div>
-  </div>
-);
+  );
+};
 
 const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) => {
   const [view, setView] = useState('month');
   const [date, setDate] = useState(new Date());
+
+  const handleDateSelect = (selectedDate) => {
+    setDate(selectedDate);
+  };
+
 
   // Преобразуем задачи в события для календаря
   const events = tasks.map(task => {
@@ -452,7 +492,13 @@ const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) =>
               selectable
               eventPropGetter={eventStyleGetter}
               components={{
-                toolbar: CustomToolbar
+                toolbar: (props) => (
+                  <CustomToolbar 
+                    {...props} 
+                    currentDate={date}
+                    onDateSelect={handleDateSelect}
+                  />
+                )
               }}
               messages={{
                 next: 'Следующий',
