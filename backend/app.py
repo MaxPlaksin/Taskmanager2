@@ -120,8 +120,8 @@ def create_task():
             server_password=data.get('serverPassword'),
             ssh_key=data.get('sshKey'),
             technical_spec=data.get('technicalSpec'),
-            estimated_hours=data.get('estimatedHours'),
-            actual_hours=data.get('actualHours', 0),
+            estimated_hours=float(data.get('estimatedHours')) if data.get('estimatedHours') and data.get('estimatedHours') != '' else None,
+            actual_hours=float(data.get('actualHours')) if data.get('actualHours') and data.get('actualHours') != '' else 0,
             created_by=current_user.id,
             assignee_id=data.get('assigneeId')
         )
@@ -168,8 +168,8 @@ def update_task(task_id):
         task.server_password = data.get('serverPassword', task.server_password)
         task.ssh_key = data.get('sshKey', task.ssh_key)
         task.technical_spec = data.get('technicalSpec', task.technical_spec)
-        task.estimated_hours = data.get('estimatedHours', task.estimated_hours)
-        task.actual_hours = data.get('actualHours', task.actual_hours)
+        task.estimated_hours = float(data.get('estimatedHours')) if data.get('estimatedHours') and data.get('estimatedHours') != '' else task.estimated_hours
+        task.actual_hours = float(data.get('actualHours')) if data.get('actualHours') and data.get('actualHours') != '' else task.actual_hours
         task.assignee_id = data.get('assigneeId', task.assignee_id)
         task.updated_at = datetime.utcnow()
         

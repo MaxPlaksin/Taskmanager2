@@ -62,6 +62,14 @@ def logout():
     logout_user()
     return jsonify({'message': 'Успешный выход из системы'}), 200
 
+@auth_bp.route('/api/auth/me', methods=['GET'])
+@login_required
+def get_current_user():
+    """Получение информации о текущем пользователе"""
+    return jsonify({
+        'user': current_user.to_dict()
+    }), 200
+
 @auth_bp.route('/api/auth/profile', methods=['PUT'])
 @login_required
 def update_profile():
