@@ -38,15 +38,24 @@ const NavigationSidebar = ({
           // Исключаем текущего пользователя из списка
           const otherUsers = users
             .filter(u => u.id !== user?.id)
-            .map(u => ({
-              id: u.id,
-              name: u.fullName || u.username,
-              unread: 0,
-              avatar: u.role === 'admin' ? '👑' : 
-                     u.role === 'director' ? '🎯' :
-                     u.role === 'manager' ? '👔' : 
-                     u.role === 'developer' ? '👨‍💻' : '👤'
-            }));
+            .map(u => {
+              // Извлекаем фамилию и имя из полного имени
+              const fullName = u.fullName || u.username;
+              const nameParts = fullName.split(' ');
+              const displayName = nameParts.length >= 2 
+                ? `${nameParts[0]} ${nameParts[1]}` // Имя и фамилия
+                : fullName; // Если только одно слово, показываем как есть
+              
+              return {
+                id: u.id,
+                name: displayName,
+                unread: 0,
+                avatar: u.role === 'admin' ? '👑' : 
+                       u.role === 'director' ? '🎯' :
+                       u.role === 'manager' ? '👔' : 
+                       u.role === 'developer' ? '👨‍💻' : '👤'
+              };
+            });
           setPersonalChats(otherUsers);
         }
       } catch (error) {

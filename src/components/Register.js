@@ -53,6 +53,12 @@ const Label = styled.label`
   color: #333;
 `;
 
+const HelpText = styled.span`
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+`;
+
 const InputContainer = styled.div`
   position: relative;
   display: flex;
@@ -316,7 +322,7 @@ const Register = ({ onBackToLogin, onLogin }) => {
 
         <Form onSubmit={handleSubmit}>
           <FormGroup>
-            <Label>Полное имя *</Label>
+            <Label>Фамилия и имя *</Label>
             <InputContainer>
               <Icon>
                 <FiUser />
@@ -326,10 +332,11 @@ const Register = ({ onBackToLogin, onLogin }) => {
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleInputChange}
-                placeholder="Введите ваше полное имя"
+                placeholder="Например: Иванов Иван"
                 required
               />
             </InputContainer>
+            <HelpText>Укажите фамилию и имя для отображения в чатах</HelpText>
           </FormGroup>
 
           <FormGroup>
