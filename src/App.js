@@ -396,6 +396,7 @@ function App() {
           selectedChatId={selectedChatId}
           projects={projects}
           user={user}
+          onLogout={handleLogout}
         />
         <MainContent>
           <ContentArea>

@@ -9,7 +9,8 @@ const NavigationSidebar = ({
   selectedProjectId,
   selectedChatId,
   projects,
-  user
+  user,
+  onLogout
 }) => {
   const [expandedSections, setExpandedSections] = useState({
     profile: false,
@@ -113,12 +114,79 @@ const NavigationSidebar = ({
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: '600', fontSize: '14px' }}>Мой профиль</div>
-            <div style={{ fontSize: '12px', opacity: 0.7 }}>Компания YouGile</div>
+            <div style={{ fontSize: '12px', opacity: 0.7 }}>Компания Алмазгеобур</div>
           </div>
           <div style={{ fontSize: '12px', opacity: 0.7 }}>
             {expandedSections.profile ? '▼' : '▶'}
           </div>
         </div>
+        
+        {/* Expanded Profile Section */}
+        {expandedSections.profile && (
+          <div style={{ 
+            padding: '16px 0 0 0',
+            borderTop: '1px solid #2d3748',
+            marginTop: '16px'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '12px',
+              marginBottom: '12px'
+            }}>
+              <div style={{ 
+                width: '40px', 
+                height: '40px', 
+                borderRadius: '50%', 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px'
+              }}>
+                {user?.role === 'admin' ? '👑' : 
+                 user?.role === 'director' ? '🎯' :
+                 user?.role === 'manager' ? '👔' : 
+                 user?.role === 'developer' ? '👨‍💻' : '👤'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: '600', fontSize: '14px' }}>
+                  {user?.fullName || user?.username || 'Пользователь'}
+                </div>
+                <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                  {user?.role === 'admin' ? 'Администратор' :
+                   user?.role === 'director' ? 'Директор' :
+                   user?.role === 'manager' ? 'Менеджер' :
+                   user?.role === 'developer' ? 'Разработчик' : 'Пользователь'}
+                </div>
+              </div>
+            </div>
+            
+            <button
+              onClick={onLogout}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '6px',
+                color: '#ef4444',
+                fontSize: '12px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.background = 'rgba(239, 68, 68, 0.2)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.background = 'rgba(239, 68, 68, 0.1)';
+              }}
+            >
+              Выйти из системы
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tasks Section */}
