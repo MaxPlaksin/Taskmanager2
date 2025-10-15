@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FiX, FiSave, FiCalendar, FiFlag, FiGitBranch, FiServer, FiKey, FiFileText } from 'react-icons/fi';
 
@@ -168,6 +168,7 @@ const TaskForm = ({ onSave, onCancel, task = null, selectedDate = null }) => {
   };
 
   const [projects, setProjects] = useState([]);
+  const [developers, setDevelopers] = useState([]);
   const [formData, setFormData] = useState({
     title: task?.title || '',
     description: task?.description || '',
@@ -182,11 +183,12 @@ const TaskForm = ({ onSave, onCancel, task = null, selectedDate = null }) => {
     technicalSpec: task?.technicalSpec || '',
     estimatedHours: task?.estimatedHours || '',
     actualHours: task?.actualHours || 0,
-    projectId: task?.projectId || ''
+    projectId: task?.projectId || '',
+    assigneeIds: task?.assignees?.map(a => a.id) || []
   });
 
-  // Загружаем проекты при монтировании компонента
-  React.useEffect(() => {
+  // Загружаем проекты и разработчиков при монтировании компонента
+  useEffect(() => {
     const loadProjects = async () => {
       try {
         const response = await fetch('/api/projects', {
@@ -202,7 +204,23 @@ const TaskForm = ({ onSave, onCancel, task = null, selectedDate = null }) => {
       }
     };
 
+    const loadDevelopers = async () => {
+      try {
+        const response = await fetch('/api/users/developers', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const developersData = await response.json();
+          setDevelopers(developersData);
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки разработчиков:', error);
+      }
+    };
+
     loadProjects();
+    loadDevelopers();
   }, []);
 
   const handleChange = (e) => {
@@ -210,6 +228,29 @@ const TaskForm = ({ onSave, onCancel, task = null, selectedDate = null }) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleAssigneeChange = (developerId) => {
+    setFormData(prev => ({
+      ...prev,
+      assigneeIds: prev.assigneeIds.includes(developerId)
+        ? prev.assigneeIds.filter(id => id !== developerId)
+        : [...prev.assigneeIds, developerId]
+    }));
+  };
+
+  const handleSelectAllDevelopers = () => {
+    setFormData(prev => ({
+      ...prev,
+      assigneeIds: developers.map(d => d.id)
+    }));
+  };
+
+  const handleDeselectAllDevelopers = () => {
+    setFormData(prev => ({
+      ...prev,
+      assigneeIds: []
     }));
   };
 
@@ -386,6 +427,63 @@ const TaskForm = ({ onSave, onCancel, task = null, selectedDate = null }) => {
               placeholder="Подробное техническое задание..."
               rows={4}
             />
+          </FormGroup>
+
+          <FormGroup>
+            <Label>Исполнители</Label>
+            <div style={{ marginBottom: '10px' }}>
+              <button
+                type="button"
+                onClick={handleSelectAllDevelopers}
+                style={{
+                  background: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  marginRight: '10px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Выбрать всех
+              </button>
+              <button
+                type="button"
+                onClick={handleDeselectAllDevelopers}
+                style={{
+                  background: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Снять всех
+              </button>
+            </div>
+            <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '4px', padding: '10px' }}>
+              {developers.map(developer => (
+                <div key={developer.id} style={{ marginBottom: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.assigneeIds.includes(developer.id)}
+                      onChange={() => handleAssigneeChange(developer.id)}
+                      style={{ marginRight: '8px' }}
+                    />
+                    <span>{developer.fullName || developer.username}</span>
+                  </label>
+                </div>
+              ))}
+              {developers.length === 0 && (
+                <div style={{ color: '#666', fontStyle: 'italic' }}>
+                  Нет доступных разработчиков
+                </div>
+              )}
+            </div>
           </FormGroup>
 
           <FormRow>

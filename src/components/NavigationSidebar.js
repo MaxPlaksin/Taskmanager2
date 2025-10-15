@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const NavigationSidebar = ({
   onProjectSelect,
@@ -17,15 +17,47 @@ const NavigationSidebar = ({
     groupChats: false
   });
 
-  const personalChats = [
-    { id: 'ivan', name: 'Иван Петров', unread: 7, avatar: '👨‍💻' },
-    { id: 'vasily', name: 'Василий Егоров', unread: 2, avatar: '👨‍🎨' }
-  ];
+  const [personalChats, setPersonalChats] = useState([]);
 
   const groupChats = [
     { id: 'designers', name: 'Чат дизайнеров', unread: 330, avatar: '🎨' },
     { id: 'general', name: 'Общий чат', unread: 4, avatar: '💬' }
   ];
+
+  // Загружаем всех пользователей для личных чатов
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        if (response.ok) {
+          const users = await response.json();
+          // Исключаем текущего пользователя из списка
+          const otherUsers = users
+            .filter(u => u.id !== user?.id)
+            .map(u => ({
+              id: u.id,
+              name: u.fullName || u.username,
+              unread: 0,
+              avatar: u.role === 'admin' ? '👑' : 
+                     u.role === 'director' ? '🎯' :
+                     u.role === 'manager' ? '👔' : 
+                     u.role === 'developer' ? '👨‍💻' : '👤'
+            }));
+          setPersonalChats(otherUsers);
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки пользователей:', error);
+      }
+    };
+
+    if (user) {
+      fetchUsers();
+    }
+  }, [user]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -103,7 +135,7 @@ const NavigationSidebar = ({
         <div style={{ fontSize: '12px', color: '#a0aec0', marginBottom: '8px' }}>
           Всего: {projects.length}
         </div>
-        {(user && (user.role === 'admin' || user.role === 'manager')) && (
+        {(user && (user.role === 'admin' || user.role === 'manager' || user.role === 'director')) && (
           <button
             onClick={onAddProject}
             style={{

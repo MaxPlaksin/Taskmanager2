@@ -7,6 +7,7 @@ import Settings from './components/Settings';
 import TaskModal from './components/TaskModal';
 import TaskForm from './components/TaskForm';
 import Login from './components/Login';
+import Register from './components/Register';
 import NavigationSidebar from './components/NavigationSidebar';
 import AddProjectModal from './components/AddProjectModal';
 import EditProjectModal from './components/EditProjectModal';
@@ -47,6 +48,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showRegister, setShowRegister] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -373,9 +375,12 @@ function App() {
     );
   }
 
-  // Показываем форму входа если пользователь не авторизован
+  // Показываем форму входа или регистрации если пользователь не авторизован
   if (!user) {
-    return <Login onLogin={handleLogin} />;
+    if (showRegister) {
+      return <Register onBackToLogin={() => setShowRegister(false)} onLogin={handleLogin} />;
+    }
+    return <Login onLogin={handleLogin} onShowRegister={() => setShowRegister(true)} />;
   }
 
   return (

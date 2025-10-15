@@ -146,6 +146,14 @@ def create_task():
         )
         
         db.session.add(task)
+        db.session.flush()  # Получаем ID задачи
+        
+        # Добавляем исполнителей
+        assignee_ids = data.get('assigneeIds', [])
+        if assignee_ids:
+            assignees = User.query.filter(User.id.in_(assignee_ids)).all()
+            task.assignees = assignees
+        
         db.session.commit()
         
         return jsonify(task.to_dict()), 201
@@ -474,6 +482,37 @@ def get_projects():
     try:
         projects = Project.query.filter_by(owner_id=current_user.id).order_by(Project.created_at.desc()).all()
         return jsonify([project.to_dict() for project in projects])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users', methods=['GET'])
+@login_required
+def get_users():
+    """Получение всех пользователей"""
+    try:
+        users = User.query.all()
+        return jsonify([{
+            'id': user.id,
+            'username': user.username,
+            'fullName': user.full_name,
+            'email': user.email,
+            'role': user.role
+        } for user in users])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/developers', methods=['GET'])
+@login_required
+def get_developers():
+    """Получение всех разработчиков"""
+    try:
+        developers = User.query.filter_by(role='developer').all()
+        return jsonify([{
+            'id': user.id,
+            'username': user.username,
+            'fullName': user.full_name,
+            'email': user.email
+        } for user in developers])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

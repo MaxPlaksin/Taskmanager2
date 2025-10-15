@@ -424,6 +424,7 @@ const Projects = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) => 
                   task={task}
                   isSelected={selectedTask?.id === task.id}
                   onClick={() => handleTaskClick(task)}
+                  currentUser={user}
                 />
               ))
             )}

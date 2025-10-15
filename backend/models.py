@@ -4,6 +4,12 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+# Промежуточная таблица для связи многие-ко-многим между задачами и исполнителями
+task_assignees = db.Table('task_assignees',
+    db.Column('task_id', db.Integer, db.ForeignKey('tasks.id'), primary_key=True),
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True)
+)
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     
@@ -51,9 +57,13 @@ class User(UserMixin, db.Model):
         """Проверяет, является ли пользователь разработчиком"""
         return self.role == 'developer'
     
+    def is_director(self):
+        """Проверяет, является ли пользователь директором"""
+        return self.role == 'director'
+    
     def can_view_analytics(self):
         """Проверяет, может ли пользователь просматривать аналитику"""
-        return self.is_admin()
+        return self.is_admin() or self.is_director()
     
     def __repr__(self):
         return f'<User {self.username}>'
@@ -87,6 +97,9 @@ class Task(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=True)
     project = db.relationship('Project', backref=db.backref('tasks', lazy=True))
     
+    # Связь многие-ко-многим с исполнителями
+    assignees = db.relationship('User', secondary=task_assignees, backref=db.backref('tasks_as_assignee', lazy=True))
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -108,6 +121,7 @@ class Task(db.Model):
             'updatedAt': self.updated_at.isoformat(),
             'assigneeId': self.assignee_id,
             'assigneeName': self.assignee.full_name if self.assignee else None,
+            'assignees': [{'id': user.id, 'fullName': user.full_name, 'username': user.username} for user in self.assignees],
             'createdBy': self.created_by,
             'creatorName': self.creator.full_name if self.creator else None,
             'projectId': self.project_id,

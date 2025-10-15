@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FiCalendar, FiFlag, FiGitBranch, FiServer } from 'react-icons/fi';
+import { FiCalendar, FiFlag, FiGitBranch, FiServer, FiUser } from 'react-icons/fi';
 
 const TaskContainer = styled.div`
   padding: 16px;
@@ -108,7 +108,7 @@ const PriorityBadge = styled.span`
   color: white;
 `;
 
-const TaskItem = ({ task, isSelected, onClick }) => {
+const TaskItem = ({ task, isSelected, onClick, currentUser }) => {
   const formatDate = (date) => {
     if (!date) return 'Без срока';
     const today = new Date();
@@ -149,6 +149,24 @@ const TaskItem = ({ task, isSelected, onClick }) => {
               <FiServer />
             </MetaIcon>
             Сервер
+          </MetaItem>
+        )}
+        
+        {currentUser && currentUser.role === 'developer' && task.creatorName && (
+          <MetaItem>
+            <MetaIcon>
+              <FiUser />
+            </MetaIcon>
+            От: {task.creatorName}
+          </MetaItem>
+        )}
+        
+        {task.assignees && task.assignees.length > 0 && (
+          <MetaItem>
+            <MetaIcon>
+              <FiUser />
+            </MetaIcon>
+            Исполнители: {task.assignees.map(a => a.fullName || a.username).join(', ')}
           </MetaItem>
         )}
       </TaskMeta>

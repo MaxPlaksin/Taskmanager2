@@ -23,8 +23,8 @@ def manager_or_admin_required(f):
     """Декоратор для проверки прав менеджера или администратора"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or (not current_user.is_manager() and not current_user.is_admin()):
-            return jsonify({'error': 'Требуются права менеджера или администратора'}), 403
+        if not current_user.is_authenticated or (not current_user.is_manager() and not current_user.is_admin() and not current_user.is_director()):
+            return jsonify({'error': 'Требуются права менеджера, директора или администратора'}), 403
         return f(*args, **kwargs)
     return decorated_function
 
@@ -126,18 +126,27 @@ def update_profile():
         return jsonify({'error': str(e)}), 500
 
 @auth_bp.route('/api/auth/register', methods=['POST'])
-@admin_required
 def register():
-    """Регистрация нового пользователя (только для администраторов)"""
+    """Регистрация нового пользователя"""
     data = request.get_json()
     
     if not data or not all(k in data for k in ('username', 'email', 'password', 'full_name', 'role')):
         return jsonify({'error': 'Необходимы все поля: username, email, password, full_name, role'}), 400
     
     # Проверяем, что роль валидна
-    valid_roles = ['admin', 'manager', 'developer']
+    valid_roles = ['director', 'manager', 'developer']  # Добавляем director
     if data['role'] not in valid_roles:
         return jsonify({'error': f'Неверная роль. Допустимые роли: {", ".join(valid_roles)}'}), 400
+    
+    # Проверяем ограничения на роли
+    if data['role'] == 'director':
+        director_count = User.query.filter_by(role='director').count()
+        if director_count >= 1:
+            return jsonify({'error': 'Максимальное количество директоров: 1'}), 400
+    elif data['role'] == 'developer':
+        developer_count = User.query.filter_by(role='developer').count()
+        if developer_count >= 2:
+            return jsonify({'error': 'Максимальное количество разработчиков: 2'}), 400
     
     # Проверяем, что пользователь не существует
     if User.query.filter_by(username=data['username']).first():
@@ -248,3 +257,43 @@ def change_password():
     db.session.commit()
     
     return jsonify({'message': 'Пароль успешно изменен'}), 200
+
+@auth_bp.route('/api/auth/roles', methods=['GET'])
+def get_available_roles():
+    """Получение доступных ролей для регистрации"""
+    developer_count = User.query.filter_by(role='developer').count()
+    manager_count = User.query.filter_by(role='manager').count()
+    director_count = User.query.filter_by(role='director').count()
+    
+    roles = []
+    
+    # Директор - максимум 1
+    roles.append({
+        'value': 'director',
+        'label': 'Директор',
+        'description': 'Полный контроль над системой и всеми проектами',
+        'available': director_count < 1,
+        'current_count': director_count,
+        'max_count': 1
+    })
+    
+    # Менеджер - без ограничений
+    roles.append({
+        'value': 'manager',
+        'label': 'Менеджер',
+        'description': 'Управление проектами и задачами',
+        'available': True,
+        'current_count': manager_count
+    })
+    
+    # Разработчик - максимум 2
+    roles.append({
+        'value': 'developer',
+        'label': 'Разработчик',
+        'description': 'Создание и выполнение задач',
+        'available': developer_count < 2,
+        'current_count': developer_count,
+        'max_count': 2
+    })
+    
+    return jsonify({'roles': roles}), 200

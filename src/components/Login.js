@@ -162,7 +162,34 @@ const DemoRole = styled.span`
   color: #495057;
 `;
 
-const Login = ({ onLogin }) => {
+const RegisterLink = styled.div`
+  text-align: center;
+  margin: 24px 0;
+  padding: 20px 0;
+  border-top: 1px solid #e0e0e0;
+`;
+
+const RegisterText = styled.span`
+  color: #666;
+  font-size: 14px;
+  margin-right: 8px;
+`;
+
+const RegisterButton = styled.button`
+  background: none;
+  border: none;
+  color: #667eea;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover {
+    color: #764ba2;
+  }
+`;
+
+const Login = ({ onLogin, onShowRegister }) => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -274,6 +301,13 @@ const Login = ({ onLogin }) => {
             {loading ? 'Вход...' : 'Войти'}
           </LoginButton>
         </form>
+
+        <RegisterLink>
+          <RegisterText>Нет аккаунта?</RegisterText>
+          <RegisterButton onClick={onShowRegister}>
+            Зарегистрироваться
+          </RegisterButton>
+        </RegisterLink>
 
         <DemoAccounts>
           <DemoTitle>Тестовые аккаунты:</DemoTitle>
