@@ -547,7 +547,7 @@ const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) =>
               <FiList />
               Последние задачи
             </TasksTitle>
-            {(user && (user.role === 'admin' || user.role === 'manager')) && (
+            {user && (
               <AddTaskButton onClick={onCreateTask}>
                 <FiPlus />
                 Добавить

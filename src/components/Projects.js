@@ -398,7 +398,7 @@ const Projects = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) => 
               </FilterButton>
             </FilterContainer>
 
-            {(user && (user.role === 'admin' || user.role === 'manager')) && (
+            {user && (
               <AddButton onClick={onCreateTask}>
                 <FiPlus />
                 Добавить задачу

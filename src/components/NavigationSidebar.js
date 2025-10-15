@@ -8,7 +8,8 @@ const NavigationSidebar = ({
   onChatSelect,
   selectedProjectId,
   selectedChatId,
-  projects
+  projects,
+  user
 }) => {
   const [expandedSections, setExpandedSections] = useState({
     profile: false,
@@ -102,27 +103,29 @@ const NavigationSidebar = ({
         <div style={{ fontSize: '12px', color: '#a0aec0', marginBottom: '8px' }}>
           Всего: {projects.length}
         </div>
-        <button
-          onClick={onAddProject}
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            background: 'rgba(255, 255, 255, 0.1)',
-            color: 'white',
-            border: '1px dashed rgba(255, 255, 255, 0.3)',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '10px'
-          }}
-        >
-          <span style={{ fontSize: '16px' }}>+</span>
-          Добавить проект
-        </button>
+        {(user && (user.role === 'admin' || user.role === 'manager')) && (
+          <button
+            onClick={onAddProject}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              border: '1px dashed rgba(255, 255, 255, 0.3)',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '10px'
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>+</span>
+            Добавить проект
+          </button>
+        )}
         {projects.length > 0 ? (
           <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
             {projects.map(project => (

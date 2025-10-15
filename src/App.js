@@ -313,9 +313,9 @@ function App() {
   };
 
   const handleCreateTask = (selectedDate = null) => {
-    // Проверяем права пользователя
-    if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
-      alert('У вас нет прав для создания задач');
+    // Проверяем права пользователя - все роли могут создавать задачи
+    if (!user) {
+      alert('Необходимо войти в систему');
       return;
     }
     setShowTaskForm(true);
@@ -390,6 +390,7 @@ function App() {
           selectedProjectId={selectedProjectId}
           selectedChatId={selectedChatId}
           projects={projects}
+          user={user}
         />
         <MainContent>
           <ContentArea>
