@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FiFolder, FiPlus, FiSearch, FiFilter, FiCalendar, FiFlag } from 'react-icons/fi';
+import { FiFolder, FiPlus, FiSearch, FiFilter, FiCalendar, FiFlag, FiSettings } from 'react-icons/fi';
 import TaskItem from './TaskItem';
+import ProjectManager from './ProjectManager';
 
 const ProjectsContainer = styled.div`
   display: flex;
@@ -26,7 +27,33 @@ const ProjectsTitle = styled.h1`
 const ProjectsSubtitle = styled.p`
   font-size: 14px;
   color: #666;
-  margin: 0;
+  margin: 0 0 20px 0;
+`;
+
+const TabsContainer = styled.div`
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #e0e0e0;
+`;
+
+const Tab = styled.button`
+  padding: 12px 24px;
+  border: none;
+  background: ${props => props.active ? 'white' : 'transparent'};
+  color: ${props => props.active ? '#4a90e2' : '#666'};
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid ${props => props.active ? '#4a90e2' : 'transparent'};
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    background: ${props => props.active ? 'white' : '#f5f5f5'};
+    color: ${props => props.active ? '#4a90e2' : '#333'};
+  }
 `;
 
 const ProjectsContent = styled.div`
@@ -203,6 +230,7 @@ const StatLabel = styled.div`
 `;
 
 const Projects = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) => {
+  const [activeTab, setActiveTab] = useState('tasks');
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -232,60 +260,81 @@ const Projects = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) => 
     <ProjectsContainer>
       <ProjectsHeader>
         <ProjectsTitle>Проекты</ProjectsTitle>
-        <ProjectsSubtitle>Все задачи отсортированы по дате добавления</ProjectsSubtitle>
+        <ProjectsSubtitle>Управление проектами и задачами</ProjectsSubtitle>
+        
+        <TabsContainer>
+          <Tab 
+            active={activeTab === 'tasks'} 
+            onClick={() => setActiveTab('tasks')}
+          >
+            <FiFolder />
+            Задачи
+          </Tab>
+          <Tab 
+            active={activeTab === 'projects'} 
+            onClick={() => setActiveTab('projects')}
+          >
+            <FiSettings />
+            Управление проектами
+          </Tab>
+        </TabsContainer>
       </ProjectsHeader>
 
       <ProjectsContent>
-        <StatsContainer>
-          <StatCard>
-            <StatIcon color="#4a90e2">
-              <FiFolder />
-            </StatIcon>
-            <StatContent>
-              <StatValue>{totalTasks}</StatValue>
-              <StatLabel>Всего задач</StatLabel>
-            </StatContent>
-          </StatCard>
+        {activeTab === 'projects' ? (
+          <ProjectManager user={user} />
+        ) : (
+          <>
+            <StatsContainer>
+              <StatCard>
+                <StatIcon color="#4a90e2">
+                  <FiFolder />
+                </StatIcon>
+                <StatContent>
+                  <StatValue>{totalTasks}</StatValue>
+                  <StatLabel>Всего задач</StatLabel>
+                </StatContent>
+              </StatCard>
 
-          <StatCard>
-            <StatIcon color="#27ae60">
-              <FiFlag />
-            </StatIcon>
-            <StatContent>
-              <StatValue>{activeTasks}</StatValue>
-              <StatLabel>Активные</StatLabel>
-            </StatContent>
-          </StatCard>
+              <StatCard>
+                <StatIcon color="#27ae60">
+                  <FiFlag />
+                </StatIcon>
+                <StatContent>
+                  <StatValue>{activeTasks}</StatValue>
+                  <StatLabel>Активные</StatLabel>
+                </StatContent>
+              </StatCard>
 
-          <StatCard>
-            <StatIcon color="#f39c12">
-              <FiCalendar />
-            </StatIcon>
-            <StatContent>
-              <StatValue>{completedTasks}</StatValue>
-              <StatLabel>Завершенные</StatLabel>
-            </StatContent>
-          </StatCard>
+              <StatCard>
+                <StatIcon color="#f39c12">
+                  <FiCalendar />
+                </StatIcon>
+                <StatContent>
+                  <StatValue>{completedTasks}</StatValue>
+                  <StatLabel>Завершенные</StatLabel>
+                </StatContent>
+              </StatCard>
 
-          <StatCard>
-            <StatIcon color="#95a5a6">
-              <FiFolder />
-            </StatIcon>
-            <StatContent>
-              <StatValue>{archivedTasks}</StatValue>
-              <StatLabel>Архивные</StatLabel>
-            </StatContent>
-          </StatCard>
-        </StatsContainer>
+              <StatCard>
+                <StatIcon color="#95a5a6">
+                  <FiFolder />
+                </StatIcon>
+                <StatContent>
+                  <StatValue>{archivedTasks}</StatValue>
+                  <StatLabel>Архивные</StatLabel>
+                </StatContent>
+              </StatCard>
+            </StatsContainer>
 
-        <ProjectsPanel>
-          <PanelHeader>
-            <Title>
-              <FiFolder />
-              Список задач
-            </Title>
-            
-            <SearchContainer>
+            <ProjectsPanel>
+            <PanelHeader>
+              <Title>
+                <FiFolder />
+                Список задач
+              </Title>
+              
+              <SearchContainer>
               <SearchInput
                 type="text"
                 placeholder="Поиск задач..."
@@ -378,8 +427,10 @@ const Projects = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) => 
                 />
               ))
             )}
-          </TasksList>
-        </ProjectsPanel>
+            </TasksList>
+            </ProjectsPanel>
+          </>
+        )}
       </ProjectsContent>
     </ProjectsContainer>
   );

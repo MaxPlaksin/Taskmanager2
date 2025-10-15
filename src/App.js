@@ -7,6 +7,9 @@ import Settings from './components/Settings';
 import TaskModal from './components/TaskModal';
 import TaskForm from './components/TaskForm';
 import Login from './components/Login';
+import NavigationSidebar from './components/NavigationSidebar';
+import AddProjectModal from './components/AddProjectModal';
+import EditProjectModal from './components/EditProjectModal';
 import { TaskProvider } from './contexts/TaskContext';
 
 const AppContainer = styled.div`
@@ -49,6 +52,12 @@ function App() {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [selectedChatId, setSelectedChatId] = useState(null);
+  const [showAddProjectModal, setShowAddProjectModal] = useState(false);
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
 
   // Проверка авторизации при загрузке
   useEffect(() => {
@@ -65,6 +74,7 @@ function App() {
         const data = await response.json();
         setUser(data.user);
         loadTasks();
+        loadProjects();
       } else {
         setUser(null);
       }
@@ -99,9 +109,27 @@ function App() {
     }
   };
 
+  const loadProjects = async () => {
+    try {
+      const response = await fetch('/api/projects', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const projectsData = await response.json();
+        setProjects(projectsData);
+      } else {
+        console.error('Ошибка загрузки проектов');
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки проектов:', error);
+    }
+  };
+
   const handleLogin = (userData) => {
     setUser(userData);
     loadTasks();
+    loadProjects();
   };
 
   const handleUserUpdate = (updatedUser) => {
@@ -111,6 +139,93 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     setTasks([]);
+    setProjects([]);
+  };
+
+  // Project management functions
+  const handleAddProject = () => {
+    setShowAddProjectModal(true);
+  };
+
+  const handleCreateProject = async (projectData) => {
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(projectData)
+      });
+
+      if (response.ok) {
+        const newProject = await response.json();
+        setProjects([...projects, newProject]);
+        alert(`Проект "${newProject.name}" успешно создан!`);
+      } else {
+        throw new Error('Ошибка создания проекта');
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
+  };
+
+  const handleEditProject = (project) => {
+    setEditingProject(project);
+    setShowEditProjectModal(true);
+  };
+
+  const handleUpdateProject = async (projectId, projectData) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(projectData)
+      });
+
+      if (response.ok) {
+        const updatedProject = await response.json();
+        setProjects(prev => prev.map(p => (p.id === projectId ? updatedProject : p)));
+        alert(`Проект "${updatedProject.name}" успешно обновлен!`);
+      } else {
+        throw new Error('Ошибка обновления проекта');
+      }
+    } catch (error) {
+      console.error('Error updating project:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteProject = async (projectId) => {
+    if (window.confirm('Вы уверены, что хотите удалить этот проект?')) {
+      try {
+        const response = await fetch(`/api/projects/${projectId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          setProjects(prev => prev.filter(p => p.id !== projectId));
+          if (selectedProjectId === projectId) {
+            setSelectedProjectId(null);
+          }
+          alert('Проект успешно удален!');
+        } else {
+          throw new Error('Ошибка удаления проекта');
+        }
+      } catch (error) {
+        console.error('Error deleting project:', error);
+        alert('Ошибка при удалении проекта. Попробуйте еще раз.');
+      }
+    }
+  };
+
+  const handleChatSelect = (chatId) => {
+    setSelectedChatId(chatId);
   };
 
   const handleTaskSelect = (task) => {
@@ -266,7 +381,16 @@ function App() {
   return (
     <TaskProvider value={{ tasks, handleTaskUpdate, handleTaskCreate, handleTaskDelete }}>
       <AppContainer>
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} user={user} onLogout={handleLogout} />
+        <NavigationSidebar
+          onProjectSelect={setSelectedProjectId}
+          onAddProject={handleAddProject}
+          onEditProject={handleEditProject}
+          onDeleteProject={handleDeleteProject}
+          onChatSelect={handleChatSelect}
+          selectedProjectId={selectedProjectId}
+          selectedChatId={selectedChatId}
+          projects={projects}
+        />
         <MainContent>
           <ContentArea>
             {renderContent()}
@@ -291,6 +415,23 @@ function App() {
             selectedDate={selectedDate}
           />
         )}
+
+        {/* Project Modals */}
+        <AddProjectModal
+          isOpen={showAddProjectModal}
+          onClose={() => setShowAddProjectModal(false)}
+          onSave={handleCreateProject}
+        />
+
+        <EditProjectModal
+          isOpen={showEditProjectModal}
+          onClose={() => {
+            setShowEditProjectModal(false);
+            setEditingProject(null);
+          }}
+          project={editingProject}
+          onSave={handleUpdateProject}
+        />
       </AppContainer>
     </TaskProvider>
   );

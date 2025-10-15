@@ -167,6 +167,7 @@ const TaskForm = ({ onSave, onCancel, task = null, selectedDate = null }) => {
     return dateObj.toISOString().split('T')[0];
   };
 
+  const [projects, setProjects] = useState([]);
   const [formData, setFormData] = useState({
     title: task?.title || '',
     description: task?.description || '',
@@ -180,8 +181,29 @@ const TaskForm = ({ onSave, onCancel, task = null, selectedDate = null }) => {
     sshKey: task?.sshKey || '',
     technicalSpec: task?.technicalSpec || '',
     estimatedHours: task?.estimatedHours || '',
-    actualHours: task?.actualHours || 0
+    actualHours: task?.actualHours || 0,
+    projectId: task?.projectId || ''
   });
+
+  // Загружаем проекты при монтировании компонента
+  React.useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const response = await fetch('/api/projects', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const projectsData = await response.json();
+          setProjects(projectsData);
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки проектов:', error);
+      }
+    };
+
+    loadProjects();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -198,7 +220,8 @@ const TaskForm = ({ onSave, onCancel, task = null, selectedDate = null }) => {
       ...formData,
       startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
       dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
-      status: task?.status || 'active'
+      status: task?.status || 'active',
+      projectId: formData.projectId ? parseInt(formData.projectId) : null
     };
     
     // Если это новая задача (task = null), используем POST
@@ -243,6 +266,22 @@ const TaskForm = ({ onSave, onCancel, task = null, selectedDate = null }) => {
               onChange={handleChange}
               placeholder="Описание задачи"
             />
+          </FormGroup>
+
+          <FormGroup>
+            <Label>Проект</Label>
+            <Select
+              name="projectId"
+              value={formData.projectId}
+              onChange={handleChange}
+            >
+              <option value="">Выберите проект</option>
+              {projects.map(project => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </Select>
           </FormGroup>
 
           <FormRow>

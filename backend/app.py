@@ -9,7 +9,7 @@ import os
 import uuid
 from werkzeug.utils import secure_filename
 from config import Config
-from models import db, Task, TaskFile, User
+from models import db, Task, TaskFile, User, Project
 from auth import auth_bp, admin_required, manager_or_admin_required
 
 app = Flask(__name__)
@@ -78,9 +78,22 @@ class UserAdminView(ModelView):
     column_filters = ['role', 'is_active', 'created_at']
     form_columns = ['username', 'email', 'password_hash', 'role', 'full_name', 'is_active']
 
+class ProjectAdminView(ModelView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin()
+    
+    def inaccessible_callback(self, name, **kwargs):
+        return jsonify({'error': 'Требуются права администратора'}), 403
+    
+    column_list = ['id', 'name', 'status', 'owner', 'created_at']
+    column_searchable_list = ['name', 'description']
+    column_filters = ['status', 'created_at']
+    form_columns = ['name', 'description', 'status', 'owner_id']
+
 admin.add_view(TaskAdminView(Task, db.session))
 admin.add_view(TaskFileAdminView(TaskFile, db.session))
 admin.add_view(UserAdminView(User, db.session))
+admin.add_view(ProjectAdminView(Project, db.session))
 
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
@@ -128,7 +141,8 @@ def create_task():
             estimated_hours=float(data.get('estimatedHours')) if data.get('estimatedHours') and data.get('estimatedHours') != '' else None,
             actual_hours=float(data.get('actualHours')) if data.get('actualHours') and data.get('actualHours') != '' else 0,
             created_by=current_user.id,
-            assignee_id=data.get('assigneeId')
+            assignee_id=data.get('assigneeId'),
+            project_id=data.get('projectId')
         )
         
         db.session.add(task)
@@ -176,6 +190,7 @@ def update_task(task_id):
         task.estimated_hours = float(data.get('estimatedHours')) if data.get('estimatedHours') and data.get('estimatedHours') != '' else task.estimated_hours
         task.actual_hours = float(data.get('actualHours')) if data.get('actualHours') and data.get('actualHours') != '' else task.actual_hours
         task.assignee_id = data.get('assigneeId', task.assignee_id)
+        task.project_id = data.get('projectId', task.project_id)
         task.updated_at = datetime.utcnow()
         
         db.session.commit()
@@ -450,6 +465,105 @@ def upload_file_general():
 def delete_file_duplicate(file_id):
     """Удаление файла"""
     pass  # Duplicate endpoint removed
+
+# Project API endpoints
+@app.route('/api/projects', methods=['GET'])
+@login_required
+def get_projects():
+    """Получение всех проектов пользователя"""
+    try:
+        projects = Project.query.filter_by(owner_id=current_user.id).order_by(Project.created_at.desc()).all()
+        return jsonify([project.to_dict() for project in projects])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/projects/<int:project_id>', methods=['GET'])
+@login_required
+def get_project(project_id):
+    """Получение конкретного проекта"""
+    try:
+        project = Project.query.filter_by(id=project_id, owner_id=current_user.id).first()
+        if not project:
+            return jsonify({'error': 'Project not found'}), 404
+        return jsonify(project.to_dict())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/projects', methods=['POST'])
+@login_required
+def create_project():
+    """Создание нового проекта"""
+    try:
+        data = request.get_json()
+        
+        project = Project(
+            name=data.get('name'),
+            description=data.get('description'),
+            status=data.get('status', 'active'),
+            owner_id=current_user.id
+        )
+        
+        db.session.add(project)
+        db.session.commit()
+        
+        return jsonify(project.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Ошибка создания проекта: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/projects/<int:project_id>', methods=['PUT'])
+@login_required
+def update_project(project_id):
+    """Обновление проекта"""
+    try:
+        data = request.get_json()
+        project = Project.query.filter_by(id=project_id, owner_id=current_user.id).first()
+        
+        if not project:
+            return jsonify({'error': 'Project not found'}), 404
+        
+        project.name = data.get('name', project.name)
+        project.description = data.get('description', project.description)
+        project.status = data.get('status', project.status)
+        project.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify(project.to_dict())
+    except Exception as e:
+        db.session.rollback()
+        print(f"Ошибка обновления проекта {project_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/projects/<int:project_id>', methods=['DELETE'])
+@login_required
+def delete_project(project_id):
+    """Удаление проекта"""
+    try:
+        project = Project.query.filter_by(id=project_id, owner_id=current_user.id).first()
+        
+        if not project:
+            return jsonify({'error': 'Project not found'}), 404
+        
+        # Удаляем все задачи проекта
+        for task in project.tasks:
+            # Удаляем связанные файлы
+            for file in task.files:
+                try:
+                    if os.path.exists(file.file_path):
+                        os.remove(file.file_path)
+                except Exception as e:
+                    print(f"Ошибка удаления файла {file.file_path}: {e}")
+        
+        db.session.delete(project)
+        db.session.commit()
+        
+        return jsonify({'message': 'Project deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        print(f"Ошибка удаления проекта {project_id}: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     with app.app_context():

@@ -83,6 +83,10 @@ class Task(db.Model):
     assignee_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
+    # Связь с проектом
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=True)
+    project = db.relationship('Project', backref=db.backref('tasks', lazy=True))
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -106,12 +110,43 @@ class Task(db.Model):
             'assigneeName': self.assignee.full_name if self.assignee else None,
             'createdBy': self.created_by,
             'creatorName': self.creator.full_name if self.creator else None,
+            'projectId': self.project_id,
+            'projectName': self.project.name if self.project else None,
             'files': [file.to_dict() for file in self.files if file.file_type == 'attachment'],
             'screenshots': [file.to_dict() for file in self.files if file.file_type == 'screenshot']
         }
     
     def __repr__(self):
         return f'<Task {self.title}>'
+
+class Project(db.Model):
+    __tablename__ = 'projects'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    status = db.Column(db.String(20), default='active')  # active, completed, archived
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Связи с пользователями
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    owner = db.relationship('User', backref=db.backref('owned_projects', lazy=True))
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'status': self.status,
+            'createdAt': self.created_at.isoformat(),
+            'updatedAt': self.updated_at.isoformat(),
+            'ownerId': self.owner_id,
+            'ownerName': self.owner.full_name if self.owner else None
+        }
+    
+    def __repr__(self):
+        return f'<Project {self.name}>'
 
 class TaskFile(db.Model):
     __tablename__ = 'task_files'
