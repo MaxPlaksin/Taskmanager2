@@ -64,10 +64,10 @@ const MessageBubble = styled.div`
   padding: 12px 16px;
   border-radius: 20px;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
   word-wrap: break-word;
-  text-align: justify;
-  text-justify: inter-word;
+  text-align: left;
+  white-space: pre-wrap;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   ${props => props.isOwn ? `
     background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
@@ -242,7 +242,7 @@ const Chat = ({ selectedChat, currentUser }) => {
           <Message key={msg.id} isOwn={msg.isOwn}>
             <div>
               <MessageBubble isOwn={msg.isOwn}>
-                {msg.text}
+                {msg.text.trim()}
               </MessageBubble>
               <MessageTime isOwn={msg.isOwn}>
                 {msg.time}
