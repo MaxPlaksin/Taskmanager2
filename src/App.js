@@ -12,6 +12,7 @@ import NavigationSidebar from './components/NavigationSidebar';
 import AddProjectModal from './components/AddProjectModal';
 import EditProjectModal from './components/EditProjectModal';
 import Chat from './components/Chat';
+import ChatModal from './components/ChatModal';
 import { TaskProvider } from './contexts/TaskContext';
 
 const AppContainer = styled.div`
@@ -58,6 +59,7 @@ function App() {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedChatId, setSelectedChatId] = useState(null);
+  const [showChatModal, setShowChatModal] = useState(false);
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [showEditProjectModal, setShowEditProjectModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
@@ -230,7 +232,12 @@ function App() {
   const handleChatSelect = (chatId) => {
     // chatId уже содержит всю информацию о пользователе из NavigationSidebar
     setSelectedChatId(chatId);
-    setActiveTab('chat');
+    setShowChatModal(true);
+  };
+
+  const handleCloseChatModal = () => {
+    setShowChatModal(false);
+    setSelectedChatId(null);
   };
 
   const handleTaskSelect = (task) => {
@@ -356,13 +363,6 @@ function App() {
             onUserUpdate={handleUserUpdate}
           />
         );
-      case 'chat':
-        return (
-          <Chat
-            selectedChat={selectedChatId}
-            currentUser={user}
-          />
-        );
       default:
         return (
           <Dashboard
@@ -449,6 +449,14 @@ function App() {
           project={editingProject}
           onSave={handleUpdateProject}
         />
+        
+        {showChatModal && (
+          <ChatModal
+            selectedChat={selectedChatId}
+            currentUser={user}
+            onClose={handleCloseChatModal}
+          />
+        )}
       </AppContainer>
     </TaskProvider>
   );
