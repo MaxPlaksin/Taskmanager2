@@ -20,7 +20,12 @@ const NavigationSidebar = ({
 
   const [personalChats, setPersonalChats] = useState([]);
 
-  const groupChats = [];
+  const groupChats = [
+    { id: 'general', name: 'Общий чат', unread: 0, avatar: '💬' },
+    { id: 'developers', name: 'Чат разработчиков', unread: 3, avatar: '👨‍💻' },
+    { id: 'managers', name: 'Чат менеджеров', unread: 1, avatar: '👔' },
+    { id: 'projects', name: 'Обсуждение проектов', unread: 0, avatar: '📋' }
+  ];
 
   // Загружаем всех пользователей для личных чатов только если есть зарегистрированные пользователи
   useEffect(() => {
