@@ -465,21 +465,6 @@ const NavigationSidebar = ({
         )}
       </div>
 
-      {/* Bottom Section */}
-      <div style={{ padding: '20px' }}>
-        <div style={{ fontSize: '14px', opacity: 0.7, marginBottom: '8px', cursor: 'pointer' }}>
-          Лента событий
-        </div>
-        <div style={{ fontSize: '14px', opacity: 0.7, marginBottom: '8px', cursor: 'pointer' }}>
-          Отчеты
-        </div>
-        <div style={{ fontSize: '14px', opacity: 0.7, marginBottom: '8px', cursor: 'pointer' }}>
-          Лицензия и оплаты
-        </div>
-        <div style={{ fontSize: '14px', opacity: 0.7, cursor: 'pointer' }}>
-          Поддержка, Новости
-        </div>
-      </div>
     </div>
   );
 };
