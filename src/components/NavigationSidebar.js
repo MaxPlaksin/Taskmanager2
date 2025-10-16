@@ -25,7 +25,7 @@ const NavigationSidebar = ({
     { id: 'general', name: 'Общий чат', unread: 4, avatar: '💬' }
   ];
 
-  // Загружаем всех пользователей для личных чатов
+  // Загружаем всех пользователей для личных чатов только если есть зарегистрированные пользователи
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -61,6 +61,8 @@ const NavigationSidebar = ({
         }
       } catch (error) {
         console.error('Ошибка загрузки пользователей:', error);
+        // Если ошибка, оставляем список пустым
+        setPersonalChats([]);
       }
     };
 
@@ -332,37 +334,49 @@ const NavigationSidebar = ({
         
         {expandedSections.personalChats && (
           <div>
-            {personalChats.map(chat => (
-              <div
-                key={chat.id}
-                onClick={() => onChatSelect(chat.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  background: selectedChatId === chat.id ? 'rgba(107, 70, 193, 0.3)' : 'transparent',
-                  marginBottom: '4px'
-                }}
-              >
-                <div style={{ fontSize: '16px' }}>{chat.avatar}</div>
-                <div style={{ flex: 1, fontSize: '14px' }}>{chat.name}</div>
-                {chat.unread > 0 && (
-                  <div style={{
-                    background: '#e53e3e',
-                    color: 'white',
-                    borderRadius: '10px',
-                    padding: '2px 6px',
-                    fontSize: '10px',
-                    fontWeight: '600'
-                  }}>
-                    {chat.unread}
-                  </div>
-                )}
+            {personalChats.length > 0 ? (
+              personalChats.map(chat => (
+                <div
+                  key={chat.id}
+                  onClick={() => onChatSelect(chat.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    background: selectedChatId === chat.id ? 'rgba(107, 70, 193, 0.3)' : 'transparent',
+                    marginBottom: '4px'
+                  }}
+                >
+                  <div style={{ fontSize: '16px' }}>{chat.avatar}</div>
+                  <div style={{ flex: 1, fontSize: '14px' }}>{chat.name}</div>
+                  {chat.unread > 0 && (
+                    <div style={{
+                      background: '#e53e3e',
+                      color: 'white',
+                      borderRadius: '10px',
+                      padding: '2px 6px',
+                      fontSize: '10px',
+                      fontWeight: '600'
+                    }}>
+                      {chat.unread}
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div style={{
+                padding: '16px',
+                textAlign: 'center',
+                color: '#a0aec0',
+                fontSize: '12px',
+                fontStyle: 'italic'
+              }}>
+                Нет зарегистрированных пользователей
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
