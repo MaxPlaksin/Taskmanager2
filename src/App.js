@@ -11,6 +11,7 @@ import Register from './components/Register';
 import NavigationSidebar from './components/NavigationSidebar';
 import AddProjectModal from './components/AddProjectModal';
 import EditProjectModal from './components/EditProjectModal';
+import Chat from './components/Chat';
 import { TaskProvider } from './contexts/TaskContext';
 
 const AppContainer = styled.div`
@@ -227,7 +228,17 @@ function App() {
   };
 
   const handleChatSelect = (chatId) => {
-    setSelectedChatId(chatId);
+    // Находим информацию о чате
+    const allUsers = [
+      { id: 'manager1', name: 'Иванов Иван', avatar: '👔' },
+      { id: 'developer1', name: 'Петров Петр', avatar: '👨‍💻' },
+      { id: 'developer2', name: 'Сидоров Сидор', avatar: '👨‍💻' },
+      { id: 'director1', name: 'Козлов Козел', avatar: '🎯' }
+    ];
+    
+    const chatInfo = allUsers.find(user => user.id === chatId);
+    setSelectedChatId(chatInfo);
+    setActiveTab('chat');
   };
 
   const handleTaskSelect = (task) => {
@@ -351,6 +362,13 @@ function App() {
           <Settings
             user={user}
             onUserUpdate={handleUserUpdate}
+          />
+        );
+      case 'chat':
+        return (
+          <Chat
+            selectedChat={selectedChatId}
+            currentUser={user}
           />
         );
       default:
