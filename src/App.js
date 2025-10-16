@@ -533,6 +533,7 @@ function App() {
           onEditProject={handleEditProject}
           onDeleteProject={handleDeleteProject}
           onCreateUser={() => setShowCreateUserModal(true)}
+          onViewUsers={handleViewUsers}
           onChatSelect={handleChatSelect}
           selectedProjectId={selectedProjectId}
           selectedChatId={selectedChatId}
