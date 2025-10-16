@@ -104,6 +104,10 @@ const Input = styled.input`
   &::placeholder {
     color: #999;
   }
+  
+  ${props => props.hasToggle && `
+    padding-right: 40px;
+  `}
 `;
 
 const PasswordToggle = styled.button`
@@ -345,6 +349,7 @@ const CreateUserModal = ({ isOpen, onClose, onSave }) => {
                   value={formData.password}
                   onChange={handleInputChange}
                   placeholder="Введите пароль (минимум 6 символов)"
+                  hasToggle={true}
                   required
                 />
                 <PasswordToggle
@@ -368,6 +373,7 @@ const CreateUserModal = ({ isOpen, onClose, onSave }) => {
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   placeholder="Подтвердите пароль"
+                  hasToggle={true}
                   required
                 />
                 <PasswordToggle
