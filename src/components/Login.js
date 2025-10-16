@@ -189,7 +189,7 @@ const RegisterButton = styled.button`
   }
 `;
 
-const Login = ({ onLogin, onShowRegister }) => {
+const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -302,12 +302,6 @@ const Login = ({ onLogin, onShowRegister }) => {
           </LoginButton>
         </form>
 
-        <RegisterLink>
-          <RegisterText>Нет аккаунта?</RegisterText>
-          <RegisterButton onClick={onShowRegister}>
-            Зарегистрироваться
-          </RegisterButton>
-        </RegisterLink>
 
         <DemoAccounts>
           <DemoTitle>Тестовые аккаунты:</DemoTitle>

@@ -5,6 +5,7 @@ const NavigationSidebar = ({
   onAddProject,
   onEditProject,
   onDeleteProject,
+  onCreateUser,
   onChatSelect,
   selectedProjectId,
   selectedChatId,
@@ -165,6 +166,33 @@ const NavigationSidebar = ({
                 </div>
               </div>
             </div>
+            
+            {user?.role === 'admin' && (
+              <button
+                onClick={onCreateUser}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  borderRadius: '6px',
+                  color: '#22c55e',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  marginBottom: '8px'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.background = 'rgba(34, 197, 94, 0.2)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = 'rgba(34, 197, 94, 0.1)';
+                }}
+              >
+                + Создать пользователя
+              </button>
+            )}
             
             <button
               onClick={onLogout}

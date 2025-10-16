@@ -7,12 +7,12 @@ import Settings from './components/Settings';
 import TaskModal from './components/TaskModal';
 import TaskForm from './components/TaskForm';
 import Login from './components/Login';
-import Register from './components/Register';
 import NavigationSidebar from './components/NavigationSidebar';
 import AddProjectModal from './components/AddProjectModal';
 import EditProjectModal from './components/EditProjectModal';
 import Chat from './components/Chat';
 import ChatModal from './components/ChatModal';
+import CreateUserModal from './components/CreateUserModal';
 import { TaskProvider } from './contexts/TaskContext';
 
 const AppContainer = styled.div`
@@ -50,7 +50,6 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [showRegister, setShowRegister] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -62,6 +61,7 @@ function App() {
   const [showChatModal, setShowChatModal] = useState(false);
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
 
   // Проверка авторизации при загрузке
@@ -240,6 +240,31 @@ function App() {
     setSelectedChatId(null);
   };
 
+  const handleCreateUser = async (userData) => {
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка при создании пользователя');
+      }
+
+      const result = await response.json();
+      alert(`Пользователь ${result.user.full_name} успешно создан!`);
+      
+      // Обновляем список пользователей в чатах
+      window.location.reload();
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const handleTaskSelect = (task) => {
     setSelectedTask(task);
     setShowTaskModal(true);
@@ -385,12 +410,9 @@ function App() {
     );
   }
 
-  // Показываем форму входа или регистрации если пользователь не авторизован
+  // Показываем форму входа если пользователь не авторизован
   if (!user) {
-    if (showRegister) {
-      return <Register onBackToLogin={() => setShowRegister(false)} onLogin={handleLogin} />;
-    }
-    return <Login onLogin={handleLogin} onShowRegister={() => setShowRegister(true)} />;
+    return <Login onLogin={handleLogin} />;
   }
 
   return (
@@ -401,6 +423,7 @@ function App() {
           onAddProject={handleAddProject}
           onEditProject={handleEditProject}
           onDeleteProject={handleDeleteProject}
+          onCreateUser={() => setShowCreateUserModal(true)}
           onChatSelect={handleChatSelect}
           selectedProjectId={selectedProjectId}
           selectedChatId={selectedChatId}
@@ -455,6 +478,14 @@ function App() {
             selectedChat={selectedChatId}
             currentUser={user}
             onClose={handleCloseChatModal}
+          />
+        )}
+        
+        {showCreateUserModal && (
+          <CreateUserModal
+            isOpen={showCreateUserModal}
+            onClose={() => setShowCreateUserModal(false)}
+            onSave={handleCreateUser}
           />
         )}
       </AppContainer>

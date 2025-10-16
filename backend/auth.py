@@ -126,15 +126,16 @@ def update_profile():
         return jsonify({'error': str(e)}), 500
 
 @auth_bp.route('/api/auth/register', methods=['POST'])
+@admin_required
 def register():
-    """Регистрация нового пользователя"""
+    """Создание нового пользователя (только для администраторов)"""
     data = request.get_json()
     
     if not data or not all(k in data for k in ('username', 'email', 'password', 'full_name', 'role')):
         return jsonify({'error': 'Необходимы все поля: username, email, password, full_name, role'}), 400
     
     # Проверяем, что роль валидна
-    valid_roles = ['director', 'manager', 'developer']  # Добавляем director
+    valid_roles = ['director', 'manager', 'developer']
     if data['role'] not in valid_roles:
         return jsonify({'error': f'Неверная роль. Допустимые роли: {", ".join(valid_roles)}'}), 400
     
