@@ -57,18 +57,26 @@ const Message = styled.div`
   display: flex;
   margin-bottom: 16px;
   ${props => props.isOwn ? 'justify-content: flex-end;' : 'justify-content: flex-start;'}
+  
+  & > div {
+    display: flex;
+    flex-direction: column;
+    align-items: ${props => props.isOwn ? 'flex-end' : 'flex-start'};
+  }
 `;
 
 const MessageBubble = styled.div`
   max-width: 70%;
+  min-width: 60px;
   padding: 12px 16px;
   border-radius: 20px;
   font-size: 14px;
   line-height: 1.6;
   word-wrap: break-word;
-  text-align: left;
+  text-align: center;
   white-space: pre-wrap;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  display: inline-block;
   ${props => props.isOwn ? `
     background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
     color: white;
