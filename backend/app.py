@@ -96,11 +96,28 @@ admin.add_view(UserAdminView(User, db.session))
 admin.add_view(ProjectAdminView(Project, db.session))
 
 @app.route('/api/tasks', methods=['GET'])
+@login_required
 def get_tasks():
-    """Получение всех задач"""
+    """Получение задач с фильтрацией по ролям"""
     try:
         status = request.args.get('status', 'active')
-        tasks = Task.query.filter_by(status=status).order_by(Task.created_at.desc()).all()
+        query = Task.query.filter_by(status=status)
+        
+        # Фильтрация по ролям
+        if current_user.role == 'admin':
+            # Админ видит все задачи
+            pass
+        elif current_user.role == 'manager':
+            # Менеджер видит только свои задачи
+            query = query.filter(Task.creator_id == current_user.id)
+        elif current_user.role == 'developer':
+            # Разработчик видит только свои задачи
+            query = query.filter(Task.creator_id == current_user.id)
+        elif current_user.role == 'director':
+            # Директор видит все задачи
+            pass
+        
+        tasks = query.order_by(Task.created_at.desc()).all()
         return jsonify([task.to_dict() for task in tasks])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -478,9 +495,15 @@ def delete_file_duplicate(file_id):
 @app.route('/api/projects', methods=['GET'])
 @login_required
 def get_projects():
-    """Получение всех проектов пользователя"""
+    """Получение проектов с фильтрацией по ролям"""
     try:
-        projects = Project.query.filter_by(owner_id=current_user.id).order_by(Project.created_at.desc()).all()
+        if current_user.role in ['admin', 'director']:
+            # Админ и директор видят все проекты
+            projects = Project.query.order_by(Project.created_at.desc()).all()
+        else:
+            # Менеджер и разработчик видят только свои проекты
+            projects = Project.query.filter_by(owner_id=current_user.id).order_by(Project.created_at.desc()).all()
+        
         return jsonify([project.to_dict() for project in projects])
     except Exception as e:
         return jsonify({'error': str(e)}), 500

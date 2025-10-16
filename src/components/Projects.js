@@ -252,6 +252,24 @@ const Projects = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) => 
   const completedTasks = tasks.filter(task => task.status === 'completed').length;
   const archivedTasks = tasks.filter(task => task.status === 'archived').length;
 
+  // Определяем текст фильтрации в зависимости от роли
+  const getFilterText = () => {
+    if (!user) return '';
+    
+    switch (user.role) {
+      case 'admin':
+        return 'Показываются все задачи в системе';
+      case 'director':
+        return 'Показываются все задачи в системе';
+      case 'manager':
+        return 'Показываются только ваши задачи';
+      case 'developer':
+        return 'Показываются только ваши задачи';
+      default:
+        return '';
+    }
+  };
+
   const handleTaskClick = (task) => {
     onTaskSelect(task);
   };
@@ -261,6 +279,11 @@ const Projects = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) => 
       <ProjectsHeader>
         <ProjectsTitle>Проекты</ProjectsTitle>
         <ProjectsSubtitle>Управление проектами и задачами</ProjectsSubtitle>
+        {getFilterText() && (
+          <ProjectsSubtitle style={{ color: '#007bff', fontSize: '13px', marginTop: '5px' }}>
+            {getFilterText()}
+          </ProjectsSubtitle>
+        )}
         
         <TabsContainer>
           <Tab 

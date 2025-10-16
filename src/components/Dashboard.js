@@ -459,11 +459,34 @@ const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) =>
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 5);
 
+  // Определяем текст фильтрации в зависимости от роли
+  const getFilterText = () => {
+    if (!user) return '';
+    
+    switch (user.role) {
+      case 'admin':
+        return 'Показываются все задачи в системе';
+      case 'director':
+        return 'Показываются все задачи в системе';
+      case 'manager':
+        return 'Показываются только ваши задачи';
+      case 'developer':
+        return 'Показываются только ваши задачи';
+      default:
+        return '';
+    }
+  };
+
   return (
     <DashboardContainer>
       <DashboardHeader>
         <DashboardTitle>Дашборд</DashboardTitle>
         <DashboardSubtitle>Обзор ваших задач и календарь</DashboardSubtitle>
+        {getFilterText() && (
+          <DashboardSubtitle style={{ color: '#007bff', fontSize: '13px', marginTop: '5px' }}>
+            {getFilterText()}
+          </DashboardSubtitle>
+        )}
       </DashboardHeader>
 
       <DashboardContent>
