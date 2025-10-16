@@ -256,13 +256,19 @@ function App() {
       }
 
       const result = await response.json();
-      alert(`Пользователь ${result.user.full_name} успешно создан!`);
+      alert(`Пользователь ${result.user.full_name} успешно создан! Пароль: ${result.generated_password}`);
       
       // Обновляем список пользователей в чатах
       window.location.reload();
     } catch (error) {
       throw error;
     }
+  };
+
+  const handleViewUsers = () => {
+    // Переключаемся на вкладку "Пользователи" или показываем список пользователей
+    setActiveTab('users');
+    setShowCreateUserModal(false);
   };
 
   const handleTaskSelect = (task) => {
@@ -486,6 +492,7 @@ function App() {
             isOpen={showCreateUserModal}
             onClose={() => setShowCreateUserModal(false)}
             onSave={handleCreateUser}
+            onViewUsers={handleViewUsers}
           />
         )}
       </AppContainer>

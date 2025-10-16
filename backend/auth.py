@@ -6,9 +6,18 @@ from datetime import datetime
 from functools import wraps
 import os
 import uuid
+import secrets
+import string
+from flask_mail import Mail, Message
 from models import db, User
 
 auth_bp = Blueprint('auth', __name__)
+
+def generate_secure_password(length=12):
+    """Генерация безопасного пароля"""
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    password = ''.join(secrets.choice(alphabet) for _ in range(length))
+    return password
 
 def admin_required(f):
     """Декоратор для проверки прав администратора"""
@@ -131,8 +140,8 @@ def register():
     """Создание нового пользователя (только для администраторов)"""
     data = request.get_json()
     
-    if not data or not all(k in data for k in ('username', 'email', 'password', 'full_name', 'role')):
-        return jsonify({'error': 'Необходимы все поля: username, email, password, full_name, role'}), 400
+    if not data or not all(k in data for k in ('email', 'fullName', 'role')):
+        return jsonify({'error': 'Необходимы все поля: email, fullName, role'}), 400
     
     # Проверяем, что роль валидна
     valid_roles = ['director', 'manager', 'developer']
@@ -149,28 +158,35 @@ def register():
         if developer_count >= 2:
             return jsonify({'error': 'Максимальное количество разработчиков: 2'}), 400
     
-    # Проверяем, что пользователь не существует
-    if User.query.filter_by(username=data['username']).first():
-        return jsonify({'error': 'Пользователь с таким именем уже существует'}), 400
-    
+    # Проверяем, что пользователь с таким email не существует
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'error': 'Пользователь с таким email уже существует'}), 400
     
+    # Генерируем username из email (часть до @)
+    username = data['email'].split('@')[0]
+    
+    # Генерируем безопасный пароль
+    password = generate_secure_password()
+    
     # Создаем нового пользователя
     user = User(
-        username=data['username'],
+        username=username,
         email=data['email'],
-        password_hash=generate_password_hash(data['password']),
-        full_name=data['full_name'],
+        password_hash=generate_password_hash(password),
+        full_name=data['fullName'],
         role=data['role']
     )
     
     db.session.add(user)
     db.session.commit()
     
+    # TODO: Отправить пароль на email
+    # send_password_email(user.email, password, user.full_name)
+    
     return jsonify({
-        'message': 'Пользователь успешно создан',
-        'user': user.to_dict()
+        'message': 'Пользователь успешно создан. Пароль отправлен на email.',
+        'user': user.to_dict(),
+        'generated_password': password  # Временно возвращаем пароль для тестирования
     }), 201
 
 @auth_bp.route('/api/auth/users', methods=['GET'])
