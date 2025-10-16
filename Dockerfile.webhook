@@ -1,0 +1,31 @@
+FROM python:3.9-slim
+
+# Устанавливаем системные зависимости
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Устанавливаем Docker CLI для управления контейнерами
+RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
+    sh get-docker.sh && \
+    rm get-docker.sh
+
+# Устанавливаем Docker Compose
+RUN curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
+    chmod +x /usr/local/bin/docker-compose
+
+# Устанавливаем Python зависимости
+RUN pip install flask
+
+# Копируем webhook скрипт
+COPY webhook.py /app/webhook.py
+
+# Делаем скрипт исполняемым
+RUN chmod +x /app/webhook.py
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Запускаем webhook сервер
+CMD ["python", "webhook.py"]

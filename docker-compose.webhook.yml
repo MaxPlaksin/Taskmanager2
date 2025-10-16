@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  webhook:
+    build:
+      context: .
+      dockerfile: Dockerfile.webhook
+    ports:
+      - "5002:5002"
+    environment:
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-your-secret-key-here}
+    volumes:
+      - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    networks:
+      - taskmanager_network
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: taskmanager
+      POSTGRES_USER: taskmanager
+      POSTGRES_PASSWORD: taskmanager123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - taskmanager_network
+
+networks:
+  taskmanager_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
