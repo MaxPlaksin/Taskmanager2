@@ -228,16 +228,8 @@ function App() {
   };
 
   const handleChatSelect = (chatId) => {
-    // Находим информацию о чате
-    const allUsers = [
-      { id: 'manager1', name: 'Иванов Иван', avatar: '👔' },
-      { id: 'developer1', name: 'Петров Петр', avatar: '👨‍💻' },
-      { id: 'developer2', name: 'Сидоров Сидор', avatar: '👨‍💻' },
-      { id: 'director1', name: 'Козлов Козел', avatar: '🎯' }
-    ];
-    
-    const chatInfo = allUsers.find(user => user.id === chatId);
-    setSelectedChatId(chatInfo);
+    // chatId уже содержит всю информацию о пользователе из NavigationSidebar
+    setSelectedChatId(chatId);
     setActiveTab('chat');
   };
 

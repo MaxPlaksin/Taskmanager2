@@ -340,7 +340,7 @@ const NavigationSidebar = ({
               personalChats.map(chat => (
                 <div
                   key={chat.id}
-                  onClick={() => onChatSelect(chat.id)}
+                  onClick={() => onChatSelect(chat)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -407,7 +407,7 @@ const NavigationSidebar = ({
               groupChats.map(chat => (
                 <div
                   key={chat.id}
-                  onClick={() => onChatSelect(chat.id)}
+                  onClick={() => onChatSelect(chat)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
