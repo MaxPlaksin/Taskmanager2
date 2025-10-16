@@ -20,10 +20,7 @@ const NavigationSidebar = ({
 
   const [personalChats, setPersonalChats] = useState([]);
 
-  const groupChats = [
-    { id: 'designers', name: 'Чат дизайнеров', unread: 330, avatar: '🎨' },
-    { id: 'general', name: 'Общий чат', unread: 4, avatar: '💬' }
-  ];
+  const groupChats = [];
 
   // Загружаем всех пользователей для личных чатов только если есть зарегистрированные пользователи
   useEffect(() => {
@@ -401,37 +398,49 @@ const NavigationSidebar = ({
         
         {expandedSections.groupChats && (
           <div>
-            {groupChats.map(chat => (
-              <div
-                key={chat.id}
-                onClick={() => onChatSelect(chat.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  background: selectedChatId === chat.id ? 'rgba(107, 70, 193, 0.3)' : 'transparent',
-                  marginBottom: '4px'
-                }}
-              >
-                <div style={{ fontSize: '16px' }}>{chat.avatar}</div>
-                <div style={{ flex: 1, fontSize: '14px' }}>{chat.name}</div>
-                {chat.unread > 0 && (
-                  <div style={{
-                    background: '#e53e3e',
-                    color: 'white',
-                    borderRadius: '10px',
-                    padding: '2px 6px',
-                    fontSize: '10px',
-                    fontWeight: '600'
-                  }}>
-                    {chat.unread}
-                  </div>
-                )}
+            {groupChats.length > 0 ? (
+              groupChats.map(chat => (
+                <div
+                  key={chat.id}
+                  onClick={() => onChatSelect(chat.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    background: selectedChatId === chat.id ? 'rgba(107, 70, 193, 0.3)' : 'transparent',
+                    marginBottom: '4px'
+                  }}
+                >
+                  <div style={{ fontSize: '16px' }}>{chat.avatar}</div>
+                  <div style={{ flex: 1, fontSize: '14px' }}>{chat.name}</div>
+                  {chat.unread > 0 && (
+                    <div style={{
+                      background: '#e53e3e',
+                      color: 'white',
+                      borderRadius: '10px',
+                      padding: '2px 6px',
+                      fontSize: '10px',
+                      fontWeight: '600'
+                    }}>
+                      {chat.unread}
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div style={{
+                padding: '16px',
+                textAlign: 'center',
+                color: '#a0aec0',
+                fontSize: '12px',
+                fontStyle: 'italic'
+              }}>
+                Нет групповых чатов
               </div>
-            ))}
+            )}
             <button
               style={{
                 width: '100%',
