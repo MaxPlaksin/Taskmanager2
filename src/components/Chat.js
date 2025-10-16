@@ -66,6 +66,8 @@ const MessageBubble = styled.div`
   font-size: 14px;
   line-height: 1.5;
   word-wrap: break-word;
+  text-align: justify;
+  text-justify: inter-word;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   ${props => props.isOwn ? `
     background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
