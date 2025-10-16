@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FiSend, FiSmile, FiPaperclip } from 'react-icons/fi';
 
@@ -62,18 +62,22 @@ const Message = styled.div`
 const MessageBubble = styled.div`
   max-width: 70%;
   padding: 12px 16px;
-  border-radius: 18px;
+  border-radius: 20px;
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.5;
+  word-wrap: break-word;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   ${props => props.isOwn ? `
-    background: #007bff;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
     color: white;
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 6px;
+    margin-left: auto;
   ` : `
-    background: white;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     color: #333;
-    border: 1px solid #e9ecef;
-    border-bottom-left-radius: 4px;
+    border: 1px solid #dee2e6;
+    border-bottom-left-radius: 6px;
+    margin-right: auto;
   `}
 `;
 
@@ -144,26 +148,43 @@ const AttachmentButton = styled.button`
 
 const Chat = ({ selectedChat, currentUser }) => {
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: 'Привет! Как дела?',
-      isOwn: false,
-      time: '10:30'
-    },
-    {
-      id: 2,
-      text: 'Привет! Все хорошо, спасибо. А у тебя как?',
-      isOwn: true,
-      time: '10:32'
-    },
-    {
-      id: 3,
-      text: 'Тоже все отлично! Работаем над новым проектом.',
-      isOwn: false,
-      time: '10:35'
+  
+  // Создаем уникальные чаты для каждого пользователя
+  const getChatHistory = (chatId) => {
+    const chatHistories = {
+      'manager1': [ // Иванов Иван
+        { id: 1, text: 'Добро пожаловать в команду!', isOwn: false, time: '09:00' },
+        { id: 2, text: 'Спасибо! Рад быть частью команды.', isOwn: true, time: '09:05' },
+        { id: 3, text: 'Есть вопросы по проектам?', isOwn: false, time: '09:10' }
+      ],
+      'developer1': [ // Петров Петр
+        { id: 1, text: 'Привет! Как дела с кодом?', isOwn: false, time: '10:15' },
+        { id: 2, text: 'Все идет хорошо, спасибо!', isOwn: true, time: '10:20' },
+        { id: 3, text: 'Отлично! Покажи что получилось', isOwn: false, time: '10:25' }
+      ],
+      'developer2': [ // Сидоров Сидор
+        { id: 1, text: 'Привет! Как дела?', isOwn: false, time: '10:30' },
+        { id: 2, text: 'Привет! Все хорошо, спасибо. А у тебя как?', isOwn: true, time: '10:32' },
+        { id: 3, text: 'Тоже все отлично! Работаем над новым проектом.', isOwn: false, time: '10:35' }
+      ],
+      'director1': [ // Козлов Козел
+        { id: 1, text: 'Добро пожаловать! Готов к работе?', isOwn: false, time: '08:00' },
+        { id: 2, text: 'Да, готов! Спасибо за доверие.', isOwn: true, time: '08:05' },
+        { id: 3, text: 'Отлично! Удачи в проектах!', isOwn: false, time: '08:10' }
+      ]
+    };
+    
+    return chatHistories[chatId] || [];
+  };
+  
+  const [messages, setMessages] = useState(getChatHistory(selectedChat?.id));
+
+  // Обновляем историю чата при смене пользователя
+  useEffect(() => {
+    if (selectedChat) {
+      setMessages(getChatHistory(selectedChat.id));
     }
-  ]);
+  }, [selectedChat]);
 
   const handleSendMessage = () => {
     if (message.trim()) {
