@@ -66,17 +66,17 @@ const Message = styled.div`
 `;
 
 const MessageBubble = styled.div`
-  max-width: 70%;
-  min-width: 60px;
+  max-width: 300px;
+  min-width: 80px;
   padding: 12px 16px;
   border-radius: 20px;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.5;
   word-wrap: break-word;
-  text-align: center;
+  text-align: left;
   white-space: pre-wrap;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  display: inline-block;
+  display: block;
   ${props => props.isOwn ? `
     background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
     color: white;
@@ -96,6 +96,7 @@ const MessageTime = styled.div`
   color: #999;
   margin-top: 4px;
   text-align: ${props => props.isOwn ? 'right' : 'left'};
+  width: 100%;
 `;
 
 const ChatInput = styled.div`
