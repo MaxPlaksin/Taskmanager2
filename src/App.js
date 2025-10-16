@@ -13,6 +13,8 @@ import EditProjectModal from './components/EditProjectModal';
 import Chat from './components/Chat';
 import ChatModal from './components/ChatModal';
 import CreateUserModal from './components/CreateUserModal';
+import UsersList from './components/UsersList';
+import EditUserModal from './components/EditUserModal';
 import { TaskProvider } from './contexts/TaskContext';
 
 const AppContainer = styled.div`
@@ -62,7 +64,11 @@ function App() {
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [showEditProjectModal, setShowEditProjectModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
 
   // Проверка авторизации при загрузке
   useEffect(() => {
@@ -269,6 +275,92 @@ function App() {
     // Переключаемся на вкладку "Пользователи" или показываем список пользователей
     setActiveTab('users');
     setShowCreateUserModal(false);
+    loadUsers();
+  };
+
+  const loadUsers = async () => {
+    try {
+      const response = await fetch('/api/auth/users', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const usersData = await response.json();
+        setUsers(usersData);
+        setFilteredUsers(usersData);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  };
+
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setShowEditUserModal(true);
+  };
+
+  const handleDeleteUser = async (user) => {
+    if (window.confirm(`Вы уверены, что хотите удалить пользователя ${user.full_name}?`)) {
+      try {
+        const response = await fetch(`/api/auth/users/${user.id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          setUsers(prev => prev.filter(u => u.id !== user.id));
+          setFilteredUsers(prev => prev.filter(u => u.id !== user.id));
+          alert('Пользователь успешно удален!');
+        } else {
+          throw new Error('Ошибка при удалении пользователя');
+        }
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        alert('Ошибка при удалении пользователя');
+      }
+    }
+  };
+
+  const handleUpdateUser = async (userId, userData) => {
+    try {
+      const response = await fetch(`/api/auth/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка при обновлении пользователя');
+      }
+
+      const updatedUser = await response.json();
+      setUsers(prev => prev.map(u => u.id === userId ? updatedUser : u));
+      setFilteredUsers(prev => prev.map(u => u.id === userId ? updatedUser : u));
+      alert('Пользователь успешно обновлен!');
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleUserSearch = (searchTerm) => {
+    const filtered = users.filter(user => 
+      user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredUsers(filtered);
+  };
+
+  const handleUserFilter = (role) => {
+    if (role === 'all') {
+      setFilteredUsers(users);
+    } else {
+      const filtered = users.filter(user => user.role === role);
+      setFilteredUsers(filtered);
+    }
   };
 
   const handleTaskSelect = (task) => {
@@ -394,6 +486,17 @@ function App() {
             onUserUpdate={handleUserUpdate}
           />
         );
+      case 'users':
+        return (
+          <UsersList
+            users={filteredUsers}
+            onEditUser={handleEditUser}
+            onDeleteUser={handleDeleteUser}
+            onCreateUser={() => setShowCreateUserModal(true)}
+            onSearch={handleUserSearch}
+            onFilter={handleUserFilter}
+          />
+        );
       default:
         return (
           <Dashboard
@@ -493,6 +596,18 @@ function App() {
             onClose={() => setShowCreateUserModal(false)}
             onSave={handleCreateUser}
             onViewUsers={handleViewUsers}
+          />
+        )}
+
+        {showEditUserModal && (
+          <EditUserModal
+            isOpen={showEditUserModal}
+            onClose={() => {
+              setShowEditUserModal(false);
+              setEditingUser(null);
+            }}
+            user={editingUser}
+            onSave={handleUpdateUser}
           />
         )}
       </AppContainer>

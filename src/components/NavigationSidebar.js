@@ -119,7 +119,6 @@ const NavigationSidebar = ({
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: '600', fontSize: '14px' }}>Мой профиль</div>
-            <div style={{ fontSize: '12px', opacity: 0.7 }}>Компания Алмазгеобур</div>
           </div>
           <div style={{ fontSize: '12px', opacity: 0.7 }}>
             {expandedSections.profile ? '▼' : '▶'}

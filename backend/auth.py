@@ -194,9 +194,7 @@ def register():
 def get_users():
     """Получение списка всех пользователей (только для администраторов)"""
     users = User.query.all()
-    return jsonify({
-        'users': [user.to_dict() for user in users]
-    }), 200
+    return jsonify([user.to_dict() for user in users]), 200
 
 @auth_bp.route('/api/auth/users/<int:user_id>', methods=['PUT'])
 @admin_required
@@ -209,23 +207,19 @@ def update_user(user_id):
         return jsonify({'error': 'Необходимы данные для обновления'}), 400
     
     # Обновляем поля
-    if 'username' in data:
-        existing_user = User.query.filter_by(username=data['username']).first()
-        if existing_user and existing_user.id != user.id:
-            return jsonify({'error': 'Пользователь с таким именем уже существует'}), 400
-        user.username = data['username']
+    if 'fullName' in data:
+        user.full_name = data['fullName']
     
     if 'email' in data:
         existing_user = User.query.filter_by(email=data['email']).first()
         if existing_user and existing_user.id != user.id:
             return jsonify({'error': 'Пользователь с таким email уже существует'}), 400
         user.email = data['email']
-    
-    if 'full_name' in data:
-        user.full_name = data['full_name']
+        # Обновляем username из email
+        user.username = data['email'].split('@')[0]
     
     if 'role' in data:
-        valid_roles = ['admin', 'manager', 'developer']
+        valid_roles = ['admin', 'director', 'manager', 'developer']
         if data['role'] not in valid_roles:
             return jsonify({'error': f'Неверная роль. Допустимые роли: {", ".join(valid_roles)}'}), 400
         user.role = data['role']

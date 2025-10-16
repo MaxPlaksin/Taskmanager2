@@ -136,31 +136,6 @@ const ErrorMessage = styled.div`
   border: 1px solid #fcc;
 `;
 
-const DemoAccounts = styled.div`
-  margin-top: 24px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-`;
-
-const DemoTitle = styled.h3`
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: #495057;
-  font-weight: 600;
-`;
-
-const DemoAccount = styled.div`
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: #6c757d;
-`;
-
-const DemoRole = styled.span`
-  font-weight: 600;
-  color: #495057;
-`;
 
 const RegisterLink = styled.div`
   text-align: center;
@@ -237,13 +212,6 @@ const Login = ({ onLogin }) => {
     }
   };
 
-  const fillDemoAccount = (username, password) => {
-    setFormData(prev => ({
-      ...prev,
-      username,
-      password
-    }));
-  };
 
   return (
     <LoginContainer>
@@ -303,36 +271,6 @@ const Login = ({ onLogin }) => {
         </form>
 
 
-        <DemoAccounts>
-          <DemoTitle>Тестовые аккаунты:</DemoTitle>
-          <DemoAccount>
-            <DemoRole>Администратор:</DemoRole> admin / admin123
-            <button 
-              onClick={() => fillDemoAccount('admin', 'admin123')}
-              style={{ marginLeft: '8px', fontSize: '12px', color: '#667eea', background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              Заполнить
-            </button>
-          </DemoAccount>
-          <DemoAccount>
-            <DemoRole>Менеджер:</DemoRole> manager / manager123
-            <button 
-              onClick={() => fillDemoAccount('manager', 'manager123')}
-              style={{ marginLeft: '8px', fontSize: '12px', color: '#667eea', background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              Заполнить
-            </button>
-          </DemoAccount>
-          <DemoAccount>
-            <DemoRole>Разработчик:</DemoRole> developer / developer123
-            <button 
-              onClick={() => fillDemoAccount('developer', 'developer123')}
-              style={{ marginLeft: '8px', fontSize: '12px', color: '#667eea', background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              Заполнить
-            </button>
-          </DemoAccount>
-        </DemoAccounts>
       </LoginCard>
     </LoginContainer>
   );
