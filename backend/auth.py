@@ -8,7 +8,7 @@ import os
 import uuid
 import secrets
 import string
-from flask_mail import Mail, Message
+# from flask_mail import Mail, Message  # Не используется
 from models import db, User
 
 auth_bp = Blueprint('auth', __name__)
