@@ -394,13 +394,8 @@ def get_stats():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# File upload endpoints
-@app.route('/api/tasks/<int:task_id>/files', methods=['POST'])
-def upload_file_duplicate(task_id):
-    """Загрузка файла для задачи"""
-    pass  # Duplicate endpoint removed
-
 @app.route('/api/tasks/<int:task_id>/files', methods=['GET'])
+@login_required
 def get_task_files(task_id):
     """Получение файлов задачи"""
     try:
@@ -409,87 +404,6 @@ def get_task_files(task_id):
         return jsonify([file.to_dict() for file in files])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-@app.route('/api/files/upload', methods=['POST'])
-@login_required
-def upload_file_general():
-    """Общая загрузка файлов"""
-    try:
-        print(f"Upload request from user: {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
-        print(f"Request files: {list(request.files.keys())}")
-        print(f"Request form: {dict(request.form)}")
-        
-        if 'file' not in request.files:
-            print("No file in request")
-            return jsonify({'error': 'No file provided'}), 400
-            
-        file = request.files['file']
-        if file.filename == '':
-            print("Empty filename")
-            return jsonify({'error': 'No file selected'}), 400
-            
-        task_id = request.form.get('taskId')
-        file_type = request.form.get('type', 'attachment')
-        description = request.form.get('description', '')
-        
-        print(f"Task ID: {task_id}, File type: {file_type}, Description: {description}")
-        
-        if not task_id:
-            print("No task ID provided")
-            return jsonify({'error': 'Task ID is required'}), 400
-            
-        task = Task.query.get_or_404(task_id)
-        print(f"Found task: {task.title}")
-        
-        if file:
-            print(f"Processing file: {file.filename}, size: {file.content_length}")
-            # Создаем уникальное имя файла
-            filename = secure_filename(file.filename)
-            unique_filename = f"{uuid.uuid4()}_{filename}"
-            file_path = os.path.join('uploads', unique_filename)
-            
-            print(f"Saving file to: {file_path}")
-            
-            # Создаем директорию если не существует
-            os.makedirs('uploads', exist_ok=True)
-            
-            # Сохраняем файл
-            file.save(file_path)
-            print(f"File saved successfully, size: {os.path.getsize(file_path)}")
-            
-            # Создаем запись в базе данных
-            task_file = TaskFile(
-                task_id=task_id,
-                filename=unique_filename,
-                original_filename=filename,
-                file_path=file_path,
-                file_size=os.path.getsize(file_path),
-                mime_type=file.content_type,
-                file_type=file_type,
-                description=description
-            )
-            
-            print(f"Creating database record: {task_file.original_filename}")
-            db.session.add(task_file)
-            db.session.commit()
-            print(f"File uploaded successfully: {task_file.id}")
-            
-            return jsonify(task_file.to_dict()), 201
-        else:
-            print("No file to process")
-            return jsonify({'error': 'No file to process'}), 400
-            
-    except Exception as e:
-        db.session.rollback()
-        print(f"Ошибка загрузки файла: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/files/<int:file_id>', methods=['DELETE'])
-def delete_file_duplicate(file_id):
-    """Удаление файла"""
-    pass  # Duplicate endpoint removed
 
 # Project API endpoints
 @app.route('/api/projects', methods=['GET'])
