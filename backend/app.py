@@ -701,6 +701,29 @@ def mark_message_read(chat_id, message_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/chats/<int:chat_id>', methods=['DELETE'])
+@login_required
+def delete_chat(chat_id):
+    """Удаление чата"""
+    try:
+        # Проверяем, что пользователь является участником чата
+        chat = Chat.query.filter(
+            Chat.id == chat_id,
+            Chat.participants.any(id=current_user.id)
+        ).first()
+        
+        if not chat:
+            return jsonify({'error': 'Chat not found'}), 404
+        
+        # Удаляем чат (сообщения удалятся автоматически благодаря cascade)
+        db.session.delete(chat)
+        db.session.commit()
+        
+        return jsonify({'message': 'Chat deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/users/online', methods=['GET'])
 @login_required
 def get_online_users():

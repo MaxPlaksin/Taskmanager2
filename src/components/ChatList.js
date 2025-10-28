@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FiMessageCircle, FiPlus, FiSearch, FiUsers } from 'react-icons/fi';
+import { FiMessageCircle, FiPlus, FiSearch, FiUsers, FiTrash2, FiMoreVertical } from 'react-icons/fi';
 
 const ChatListContainer = styled.div`
   display: flex;
@@ -103,10 +103,15 @@ const ChatItem = styled.div`
   cursor: pointer;
   transition: all 0.2s;
   border: 1px solid #e0e0e0;
+  position: relative;
   
   &:hover {
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     transform: translateY(-1px);
+    
+    ${ActionMenuButton} {
+      opacity: 1;
+    }
   }
   
   &.active {
@@ -120,6 +125,141 @@ const ChatHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
+  position: relative;
+`;
+
+const ChatActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const ActionMenuButton = styled.button`
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 16px;
+  opacity: 0;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #f5f5f5;
+    color: #333;
+  }
+`;
+
+const ActionMenu = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+  min-width: 120px;
+  overflow: hidden;
+`;
+
+const ActionMenuItem = styled.button`
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background: #f5f5f5;
+  }
+  
+  &.danger {
+    color: #dc3545;
+    
+    &:hover {
+      background: #f8d7da;
+    }
+  }
+`;
+
+const DeleteConfirmModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+`;
+
+const DeleteConfirmContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+`;
+
+const DeleteConfirmTitle = styled.h3`
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+`;
+
+const DeleteConfirmText = styled.p`
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+`;
+
+const DeleteConfirmButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+`;
+
+const DeleteConfirmButton = styled.button`
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &.cancel {
+    background: #f8f9fa;
+    color: #666;
+    border: 1px solid #ddd;
+    
+    &:hover {
+      background: #e9ecef;
+    }
+  }
+  
+  &.confirm {
+    background: #dc3545;
+    color: white;
+    border: none;
+    
+    &:hover {
+      background: #c82333;
+    }
+  }
 `;
 
 const ChatTitle = styled.div`
@@ -193,6 +333,8 @@ const ChatList = ({ onChatSelect, selectedChatId, onCreateChat, onShowUsers, cur
   const [chats, setChats] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showActionMenu, setShowActionMenu] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   useEffect(() => {
     fetchChats();
@@ -272,6 +414,59 @@ const ChatList = ({ onChatSelect, selectedChatId, onCreateChat, onShowUsers, cur
     return participant ? participant.isOnline : false;
   };
 
+  const handleActionMenuClick = (e, chatId) => {
+    e.stopPropagation();
+    setShowActionMenu(showActionMenu === chatId ? null : chatId);
+  };
+
+  const handleDeleteClick = (e, chatId) => {
+    e.stopPropagation();
+    setShowActionMenu(null);
+    setShowDeleteConfirm(chatId);
+  };
+
+  const handleDeleteConfirm = async (chatId) => {
+    try {
+      const response = await fetch(`/api/chats/${chatId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        // Удаляем чат из списка
+        setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
+        setShowDeleteConfirm(null);
+        
+        // Если удаленный чат был выбран, сбрасываем выбор
+        if (selectedChatId === chatId) {
+          onChatSelect(null);
+        }
+      } else {
+        console.error('Ошибка удаления чата:', response.status, response.statusText);
+        alert('Не удалось удалить чат');
+      }
+    } catch (error) {
+      console.error('Ошибка удаления чата:', error);
+      alert('Не удалось удалить чат');
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(null);
+  };
+
+  // Закрываем меню при клике вне его
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowActionMenu(null);
+    };
+    
+    if (showActionMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showActionMenu]);
+
   if (loading) {
     return (
       <ChatListContainer>
@@ -348,9 +543,25 @@ const ChatList = ({ onChatSelect, selectedChatId, onCreateChat, onShowUsers, cur
                   {getChatTitle(chat)}
                   <OnlineIndicator isOnline={isParticipantOnline(chat)} />
                 </ChatTitle>
-                <ChatTime>
-                  {chat.lastMessage ? formatTime(chat.lastMessage.createdAt) : formatTime(chat.updatedAt)}
-                </ChatTime>
+                <ChatActions>
+                  <ChatTime>
+                    {chat.lastMessage ? formatTime(chat.lastMessage.createdAt) : formatTime(chat.updatedAt)}
+                  </ChatTime>
+                  <ActionMenuButton onClick={(e) => handleActionMenuClick(e, chat.id)}>
+                    <FiMoreVertical />
+                  </ActionMenuButton>
+                  {showActionMenu === chat.id && (
+                    <ActionMenu>
+                      <ActionMenuItem 
+                        className="danger"
+                        onClick={(e) => handleDeleteClick(e, chat.id)}
+                      >
+                        <FiTrash2 />
+                        Удалить чат
+                      </ActionMenuItem>
+                    </ActionMenu>
+                  )}
+                </ChatActions>
               </ChatHeader>
               
               <ChatPreview>
@@ -371,6 +582,32 @@ const ChatList = ({ onChatSelect, selectedChatId, onCreateChat, onShowUsers, cur
           ))
         )}
       </ChatListContent>
+      
+      {/* Модальное окно подтверждения удаления */}
+      {showDeleteConfirm && (
+        <DeleteConfirmModal onClick={handleDeleteCancel}>
+          <DeleteConfirmContent onClick={(e) => e.stopPropagation()}>
+            <DeleteConfirmTitle>Удалить чат</DeleteConfirmTitle>
+            <DeleteConfirmText>
+              Вы уверены, что хотите удалить этот чат? Все сообщения в чате будут удалены безвозвратно.
+            </DeleteConfirmText>
+            <DeleteConfirmButtons>
+              <DeleteConfirmButton 
+                className="cancel"
+                onClick={handleDeleteCancel}
+              >
+                Отмена
+              </DeleteConfirmButton>
+              <DeleteConfirmButton 
+                className="confirm"
+                onClick={() => handleDeleteConfirm(showDeleteConfirm)}
+              >
+                Удалить
+              </DeleteConfirmButton>
+            </DeleteConfirmButtons>
+          </DeleteConfirmContent>
+        </DeleteConfirmModal>
+      )}
     </ChatListContainer>
   );
 };
