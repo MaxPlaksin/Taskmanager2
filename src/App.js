@@ -16,6 +16,7 @@ import CreateUserModal from './components/CreateUserModal';
 import UsersList from './components/UsersList';
 import EditUserModal from './components/EditUserModal';
 import { TaskProvider } from './contexts/TaskContext';
+import { SocketProvider } from './contexts/SocketContext';
 
 const AppContainer = styled.div`
   display: flex;
@@ -745,8 +746,9 @@ function App() {
   }
 
   return (
-    <TaskProvider value={{ tasks, handleTaskUpdate, handleTaskCreate, handleTaskDelete }}>
-      <AppContainer>
+    <SocketProvider>
+      <TaskProvider value={{ tasks, handleTaskUpdate, handleTaskCreate, handleTaskDelete }}>
+        <AppContainer>
         <NavigationSidebar
           onProjectSelect={setSelectedProjectId}
           onAddProject={handleAddProject}
@@ -834,6 +836,7 @@ function App() {
         )}
       </AppContainer>
     </TaskProvider>
+    </SocketProvider>
   );
 }
 

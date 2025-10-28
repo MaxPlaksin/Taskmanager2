@@ -4,6 +4,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_login import LoginManager, login_required, current_user
 from flask_migrate import Migrate
+from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from datetime import datetime
 import os
 import uuid
@@ -21,6 +22,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 # Initialize extensions
 db.init_app(app)
 migrate = Migrate(app, db)
+socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app, supports_credentials=True)
 
 # Initialize Flask-Login
@@ -777,7 +779,164 @@ def update_online_status(user_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+# WebSocket events
+@socketio.on('connect')
+def handle_connect():
+    """Обработка подключения клиента"""
+    print(f'Client connected: {request.sid}')
+    emit('connected', {'message': 'Connected to server'})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Обработка отключения клиента"""
+    print(f'Client disconnected: {request.sid}')
+
+@socketio.on('join_chat')
+def handle_join_chat(data):
+    """Присоединение к чату"""
+    chat_id = data.get('chat_id')
+    user_id = data.get('user_id')
+    
+    if not chat_id or not user_id:
+        emit('error', {'message': 'Chat ID and User ID are required'})
+        return
+    
+    # Проверяем, что пользователь является участником чата
+    chat = Chat.query.filter(
+        Chat.id == chat_id,
+        Chat.participants.any(id=user_id)
+    ).first()
+    
+    if not chat:
+        emit('error', {'message': 'Chat not found or access denied'})
+        return
+    
+    # Присоединяемся к комнате чата
+    room = f'chat_{chat_id}'
+    join_room(room)
+    emit('joined_chat', {'chat_id': chat_id, 'room': room})
+
+@socketio.on('leave_chat')
+def handle_leave_chat(data):
+    """Покидание чата"""
+    chat_id = data.get('chat_id')
+    room = f'chat_{chat_id}'
+    leave_room(room)
+    emit('left_chat', {'chat_id': chat_id})
+
+@socketio.on('send_message')
+def handle_send_message(data):
+    """Отправка сообщения через WebSocket"""
+    chat_id = data.get('chat_id')
+    user_id = data.get('user_id')
+    content = data.get('content')
+    message_type = data.get('message_type', 'text')
+    
+    if not all([chat_id, user_id, content]):
+        emit('error', {'message': 'Chat ID, User ID and content are required'})
+        return
+    
+    try:
+        # Проверяем, что пользователь является участником чата
+        chat = Chat.query.filter(
+            Chat.id == chat_id,
+            Chat.participants.any(id=user_id)
+        ).first()
+        
+        if not chat:
+            emit('error', {'message': 'Chat not found or access denied'})
+            return
+        
+        # Создаем сообщение
+        message = ChatMessage(
+            chat_id=chat_id,
+            sender_id=user_id,
+            content=content,
+            message_type=message_type
+        )
+        
+        db.session.add(message)
+        db.session.commit()
+        
+        # Обновляем время последнего обновления чата
+        chat.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        # Отправляем сообщение всем участникам чата
+        room = f'chat_{chat_id}'
+        emit('new_message', {
+            'message': message.to_dict(),
+            'chat_id': chat_id
+        }, room=room)
+        
+        # Отправляем подтверждение отправителю
+        emit('message_sent', {
+            'message_id': message.id,
+            'chat_id': chat_id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        emit('error', {'message': f'Failed to send message: {str(e)}'})
+
+@socketio.on('typing')
+def handle_typing(data):
+    """Обработка события печати"""
+    chat_id = data.get('chat_id')
+    user_id = data.get('user_id')
+    is_typing = data.get('is_typing', True)
+    
+    if not chat_id or not user_id:
+        return
+    
+    # Проверяем, что пользователь является участником чата
+    chat = Chat.query.filter(
+        Chat.id == chat_id,
+        Chat.participants.any(id=user_id)
+    ).first()
+    
+    if not chat:
+        return
+    
+    # Отправляем событие печати всем участникам чата кроме отправителя
+    room = f'chat_{chat_id}'
+    emit('user_typing', {
+        'user_id': user_id,
+        'chat_id': chat_id,
+        'is_typing': is_typing
+    }, room=room, include_self=False)
+
+@socketio.on('mark_read')
+def handle_mark_read(data):
+    """Отметка сообщений как прочитанных"""
+    chat_id = data.get('chat_id')
+    user_id = data.get('user_id')
+    
+    if not chat_id or not user_id:
+        return
+    
+    try:
+        # Отмечаем все непрочитанные сообщения как прочитанные
+        ChatMessage.query.filter(
+            ChatMessage.chat_id == chat_id,
+            ChatMessage.sender_id != user_id,
+            ChatMessage.is_read == False
+        ).update({'is_read': True})
+        
+        db.session.commit()
+        
+        # Уведомляем других участников чата
+        room = f'chat_{chat_id}'
+        emit('messages_read', {
+            'chat_id': chat_id,
+            'user_id': user_id
+        }, room=room, include_self=False)
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f'Error marking messages as read: {e}')
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host='0.0.0.0', port=5002)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5002, allow_unsafe_werkzeug=True)

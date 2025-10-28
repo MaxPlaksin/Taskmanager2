@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { FiSend, FiArrowLeft, FiMoreVertical, FiUser } from 'react-icons/fi';
+import { useSocket } from '../contexts/SocketContext';
 
 const ChatWindowContainer = styled.div`
   display: flex;
@@ -245,18 +246,77 @@ const ChatWindow = ({ chat, onBack, currentUser }) => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState([]);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  
+  const { socket, isConnected, joinChat, leaveChat, sendMessage, sendTyping, markMessagesAsRead } = useSocket();
 
   useEffect(() => {
-    if (chat) {
+    if (chat && socket) {
+      // Присоединяемся к чату
+      joinChat(chat.id);
+      
+      // Загружаем сообщения
       fetchMessages();
       
-      // Обновляем сообщения каждые 2 секунды
-      const interval = setInterval(fetchMessages, 2000);
-      return () => clearInterval(interval);
+      // Отмечаем сообщения как прочитанные
+      markMessagesAsRead(chat.id);
+      
+      // Обработчики WebSocket событий
+      const handleNewMessage = (data) => {
+        if (data.chat_id === chat.id) {
+          setMessages(prevMessages => [...prevMessages, data.message]);
+        }
+      };
+      
+      const handleMessageSent = (data) => {
+        if (data.chat_id === chat.id) {
+          setSending(false);
+        }
+      };
+      
+      const handleUserTyping = (data) => {
+        if (data.chat_id === chat.id) {
+          setTypingUsers(prev => {
+            if (data.is_typing) {
+              return [...prev.filter(id => id !== data.user_id), data.user_id];
+            } else {
+              return prev.filter(id => id !== data.user_id);
+            }
+          });
+        }
+      };
+      
+      const handleMessagesRead = (data) => {
+        if (data.chat_id === chat.id) {
+          // Обновляем статус прочитанности сообщений
+          setMessages(prevMessages => 
+            prevMessages.map(msg => 
+              msg.senderId !== data.user_id ? { ...msg, isRead: true } : msg
+            )
+          );
+        }
+      };
+      
+      // Подписываемся на события
+      socket.on('new_message', handleNewMessage);
+      socket.on('message_sent', handleMessageSent);
+      socket.on('user_typing', handleUserTyping);
+      socket.on('messages_read', handleMessagesRead);
+      
+      // Очистка при размонтировании
+      return () => {
+        leaveChat(chat.id);
+        socket.off('new_message', handleNewMessage);
+        socket.off('message_sent', handleMessageSent);
+        socket.off('user_typing', handleUserTyping);
+        socket.off('messages_read', handleMessagesRead);
+      };
     }
-  }, [chat]);
+  }, [chat, socket, joinChat, leaveChat, markMessagesAsRead]);
 
   useEffect(() => {
     scrollToBottom();
@@ -296,35 +356,21 @@ const ChatWindow = ({ chat, onBack, currentUser }) => {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !chat || sending) return;
+    if (!newMessage.trim() || !chat || sending || !isConnected) return;
     
     setSending(true);
     
     try {
-      const response = await fetch(`/api/chats/${chat.id}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          content: newMessage.trim(),
-          messageType: 'text'
-        })
-      });
+      // Отправляем сообщение через WebSocket
+      sendMessage(chat.id, newMessage.trim(), 'text');
+      setNewMessage('');
       
-      if (response.ok) {
-        const messageData = await response.json();
-        setNewMessage('');
-        
-        // Сразу обновляем список сообщений с сервера
-        await fetchMessages();
-      } else {
-        console.error('Ошибка отправки сообщения:', response.status, response.statusText);
-      }
+      // Останавливаем индикатор печати
+      sendTyping(chat.id, false);
+      setIsTyping(false);
+      
     } catch (error) {
       console.error('Ошибка отправки сообщения:', error);
-    } finally {
       setSending(false);
     }
   };
@@ -345,6 +391,27 @@ const ChatWindow = ({ chat, onBack, currentUser }) => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleInputChange = (e) => {
+    setNewMessage(e.target.value);
+    
+    // Отправляем событие печати
+    if (chat && !isTyping) {
+      setIsTyping(true);
+      sendTyping(chat.id, true);
+    }
+    
+    // Очищаем предыдущий таймаут
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Устанавливаем новый таймаут для остановки индикатора печати
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      sendTyping(chat.id, false);
+    }, 1000);
   };
 
   const formatTime = (dateString) => {
@@ -427,6 +494,16 @@ const ChatWindow = ({ chat, onBack, currentUser }) => {
             </MessageBubble>
           ))
         )}
+        {typingUsers.length > 0 && (
+          <TypingIndicator>
+            <TypingDot />
+            <TypingDot />
+            <TypingDot />
+            <span style={{ marginLeft: '8px', fontSize: '12px', color: '#666' }}>
+              {typingUsers.length === 1 ? 'Печатает...' : 'Печатают...'}
+            </span>
+          </TypingIndicator>
+        )}
         <div ref={messagesEndRef} />
       </MessagesContainer>
       
@@ -434,10 +511,10 @@ const ChatWindow = ({ chat, onBack, currentUser }) => {
         <MessageInput
           ref={inputRef}
           value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          onChange={handleInputChange}
           onKeyPress={handleKeyPress}
-          placeholder="Напишите сообщение..."
-          disabled={sending}
+          placeholder={isConnected ? "Напишите сообщение..." : "Подключение к серверу..."}
+          disabled={sending || !isConnected}
         />
         <SendButton
           onClick={handleSendMessage}
