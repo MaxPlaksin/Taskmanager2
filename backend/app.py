@@ -4,7 +4,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_login import LoginManager, login_required, current_user
 from flask_migrate import Migrate
-from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from datetime import datetime
 import os
 import uuid
@@ -259,7 +259,7 @@ def delete_task(task_id):
 def upload_file(task_id):
     """Загрузка файла к задаче"""
     try:
-        task = Task.query.get_or_404(task_id)
+        Task.query.get_or_404(task_id)
         
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
@@ -401,7 +401,7 @@ def get_stats():
 def get_task_files(task_id):
     """Получение файлов задачи"""
     try:
-        task = Task.query.get_or_404(task_id)
+        Task.query.get_or_404(task_id)
         files = TaskFile.query.filter_by(task_id=task_id).all()
         return jsonify([file.to_dict() for file in files])
     except Exception as e:
@@ -563,7 +563,7 @@ def get_user_chats():
             unread_count = ChatMessage.query.filter(
                 ChatMessage.chat_id == chat.id,
                 ChatMessage.sender_id != user_id,
-                ChatMessage.is_read == False
+                not ChatMessage.is_read
             ).count()
             
             chat_dict['unreadCount'] = unread_count
@@ -920,7 +920,7 @@ def handle_mark_read(data):
         ChatMessage.query.filter(
             ChatMessage.chat_id == chat_id,
             ChatMessage.sender_id != user_id,
-            ChatMessage.is_read == False
+            not ChatMessage.is_read
         ).update({'is_read': True})
         
         db.session.commit()
