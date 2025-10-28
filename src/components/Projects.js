@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FiFolder, FiPlus, FiSearch, FiFilter, FiCalendar, FiFlag, FiSettings } from 'react-icons/fi';
+import { FiFolder, FiPlus, FiSearch, FiFilter, FiCalendar, FiFlag, FiSettings, FiHome } from 'react-icons/fi';
 import TaskItem from './TaskItem';
 import ProjectManager from './ProjectManager';
 
@@ -28,6 +28,36 @@ const ProjectsSubtitle = styled.p`
   font-size: 14px;
   color: #666;
   margin: 0 0 20px 0;
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+`;
+
+const HomeButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: #357abd;
+  }
+
+  &:active {
+    background: #2c5aa0;
+  }
 `;
 
 const TabsContainer = styled.div`
@@ -229,7 +259,7 @@ const StatLabel = styled.div`
   color: #666;
 `;
 
-const Projects = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) => {
+const Projects = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user, onNavigateToHome, onTaskUpdate }) => {
   const [activeTab, setActiveTab] = useState('tasks');
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -284,6 +314,13 @@ const Projects = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) => 
             {getFilterText()}
           </ProjectsSubtitle>
         )}
+        
+        <HeaderActions>
+          <HomeButton onClick={onNavigateToHome}>
+            <FiHome />
+            Главная
+          </HomeButton>
+        </HeaderActions>
         
         <TabsContainer>
           <Tab 

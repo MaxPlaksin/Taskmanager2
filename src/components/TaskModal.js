@@ -23,7 +23,8 @@ import {
   FiActivity,
   FiTrendingUp,
   FiCamera,
-  FiImage
+  FiImage,
+  FiSave
 } from 'react-icons/fi';
 import TaskForm from './TaskForm';
 
@@ -121,6 +122,37 @@ const CloseButton = styled.button`
   
   &:hover {
     background: #f5f5f5;
+  }
+`;
+
+const ModalFooter = styled.div`
+  padding: 16px 24px;
+  border-top: 1px solid #e0e0e0;
+  background: #fafafa;
+  display: flex;
+  justify-content: center;
+`;
+
+const SaveButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background: #357abd;
+  }
+  
+  &:active {
+    background: #2c5aa0;
   }
 `;
 
@@ -468,6 +500,47 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
     }
   };
 
+  const handleSaveChanges = async () => {
+    try {
+      // Создаем обновленную задачу с текущими файлами и скриншотами
+      const updatedTask = {
+        ...task,
+        files: files,
+        screenshots: screenshots,
+        updatedAt: new Date().toISOString()
+      };
+
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updatedTask)
+      });
+
+      if (response.ok) {
+        const savedTask = await response.json();
+        onTaskUpdate({
+          ...savedTask,
+          files: files,
+          screenshots: screenshots,
+          startDate: savedTask.startDate ? new Date(savedTask.startDate) : null,
+          dueDate: savedTask.dueDate ? new Date(savedTask.dueDate) : null,
+          createdAt: new Date(savedTask.createdAt),
+          updatedAt: new Date(savedTask.updatedAt)
+        });
+        alert('Изменения сохранены успешно!');
+      } else {
+        console.error('Ошибка сохранения задачи');
+        alert('Ошибка сохранения задачи');
+      }
+    } catch (error) {
+      console.error('Ошибка сохранения задачи:', error);
+      alert('Ошибка сохранения задачи');
+    }
+  };
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     // Можно добавить уведомление о копировании
@@ -560,11 +633,10 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
     for (const file of imageFiles) {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('taskId', task.id);
       formData.append('type', 'screenshot');
 
       try {
-        const response = await fetch('/api/files/upload', {
+        const response = await fetch(`/api/tasks/${task.id}/files`, {
           method: 'POST',
           body: formData,
           credentials: 'include'
@@ -575,9 +647,11 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
           setScreenshots(prev => [...prev, newScreenshot]);
         } else {
           console.error('Ошибка при загрузке скриншота');
+          alert(`Ошибка загрузки скриншота: ${file.name}`);
         }
       } catch (error) {
         console.error('Ошибка при загрузке скриншота:', error);
+        alert(`Ошибка загрузки скриншота: ${file.name}`);
       }
     }
   };
@@ -735,6 +809,7 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
     for (const file of uploadedFiles) {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('type', 'attachment');
       
       try {
         const response = await fetch(`/api/tasks/${task.id}/files`, {
@@ -755,6 +830,8 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
         alert(`Ошибка загрузки файла: ${file.name}`);
       }
     }
+    
+    event.target.value = ''; // Очищаем input
   };
 
   const handleDragOver = (event) => {
@@ -1168,6 +1245,13 @@ const TaskModal = ({ task, onClose, onTaskUpdate, onTaskDelete }) => {
             </Section>
           </ScreenshotSection>
         </ModalBody>
+        
+        <ModalFooter>
+          <SaveButton onClick={handleSaveChanges}>
+            <FiSave />
+            Сохранить изменения
+          </SaveButton>
+        </ModalFooter>
       </ModalContent>
       
       {/* Модальное окно для просмотра скриншотов */}

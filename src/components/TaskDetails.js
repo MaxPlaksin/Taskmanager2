@@ -14,7 +14,12 @@ import {
   FiUser,
   FiCopy,
   FiEye,
-  FiEyeOff
+  FiEyeOff,
+  FiPaperclip,
+  FiCamera,
+  FiDownload,
+  FiX,
+  FiSave
 } from 'react-icons/fi';
 import TaskForm from './TaskForm';
 
@@ -250,9 +255,194 @@ const ToggleButton = styled.button`
   }
 `;
 
+const SaveButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin: 20px auto;
+  
+  &:hover {
+    background: #357abd;
+  }
+`;
+
+const FileSection = styled.div`
+  margin-bottom: 24px;
+`;
+
+const FileUploadArea = styled.div`
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  background: #fafafa;
+  margin-bottom: 16px;
+  transition: all 0.2s;
+  
+  &:hover {
+    border-color: #4a90e2;
+    background: #f0f7ff;
+  }
+`;
+
+const FileUploadButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 0 auto;
+  
+  &:hover {
+    background: #357abd;
+  }
+`;
+
+const FileList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const FileItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+`;
+
+const FileInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+`;
+
+const FileIcon = styled.div`
+  width: 32px;
+  height: 32px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+`;
+
+const FileDetails = styled.div`
+  flex: 1;
+`;
+
+const FileName = styled.div`
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 2px;
+`;
+
+const FileSize = styled.div`
+  font-size: 12px;
+  color: #666;
+`;
+
+const FileActions = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const FileActionButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #f5f5f5;
+  }
+  
+  &.danger:hover {
+    background: #fee;
+    border-color: #e74c3c;
+    color: #e74c3c;
+  }
+`;
+
+const ScreenshotPreview = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+`;
+
+const ScreenshotItem = styled.div`
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+`;
+
+const ScreenshotImage = styled.img`
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+`;
+
+const ScreenshotActions = styled.div`
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 4px;
+`;
+
+const ScreenshotButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.9);
+  }
+`;
+
 const TaskDetails = ({ task, onTaskUpdate }) => {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [files, setFiles] = useState(task?.files || []);
+  const [screenshots, setScreenshots] = useState(task?.screenshots || []);
+  const [isUploading, setIsUploading] = useState(false);
 
   if (!task) {
     return (
@@ -292,6 +482,147 @@ const TaskDetails = ({ task, onTaskUpdate }) => {
   const handleSave = (updatedTask) => {
     onTaskUpdate(updatedTask);
     setShowEditForm(false);
+  };
+
+  const handleFileUpload = async (event) => {
+    const uploadedFiles = Array.from(event.target.files);
+    setIsUploading(true);
+    
+    for (const file of uploadedFiles) {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const response = await fetch(`/api/tasks/${task.id}/files`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+        
+        if (response.ok) {
+          const uploadedFile = await response.json();
+          setFiles(prev => [...prev, uploadedFile]);
+        } else {
+          console.error('Ошибка загрузки файла:', file.name);
+          alert(`Ошибка загрузки файла: ${file.name}`);
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки файла:', error);
+        alert(`Ошибка загрузки файла: ${file.name}`);
+      }
+    }
+    
+    setIsUploading(false);
+    event.target.value = ''; // Очищаем input
+  };
+
+  const handleScreenshotUpload = async (event) => {
+    const uploadedFiles = Array.from(event.target.files);
+    setIsUploading(true);
+    
+    for (const file of uploadedFiles) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('file_type', 'screenshot');
+      
+      try {
+        const response = await fetch(`/api/tasks/${task.id}/files`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+        
+        if (response.ok) {
+          const uploadedFile = await response.json();
+          setScreenshots(prev => [...prev, uploadedFile]);
+        } else {
+          console.error('Ошибка загрузки скриншота:', file.name);
+          alert(`Ошибка загрузки скриншота: ${file.name}`);
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки скриншота:', error);
+        alert(`Ошибка загрузки скриншота: ${file.name}`);
+      }
+    }
+    
+    setIsUploading(false);
+    event.target.value = ''; // Очищаем input
+  };
+
+  const handleFileDelete = async (fileId) => {
+    if (window.confirm('Удалить этот файл?')) {
+      try {
+        const response = await fetch(`/api/files/${fileId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          setFiles(prev => prev.filter(file => file.id !== fileId));
+        } else {
+          console.error('Ошибка удаления файла');
+          alert('Ошибка удаления файла');
+        }
+      } catch (error) {
+        console.error('Ошибка удаления файла:', error);
+        alert('Ошибка удаления файла');
+      }
+    }
+  };
+
+  const handleScreenshotDelete = async (fileId) => {
+    if (window.confirm('Удалить этот скриншот?')) {
+      try {
+        const response = await fetch(`/api/files/${fileId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          setScreenshots(prev => prev.filter(file => file.id !== fileId));
+        } else {
+          console.error('Ошибка удаления скриншота');
+          alert('Ошибка удаления скриншота');
+        }
+      } catch (error) {
+        console.error('Ошибка удаления скриншота:', error);
+        alert('Ошибка удаления скриншота');
+      }
+    }
+  };
+
+  const handleFileDownload = async (fileId, filename) => {
+    try {
+      const response = await fetch(`/api/files/${fileId}/download`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } else {
+        console.error('Ошибка скачивания файла');
+        alert('Ошибка скачивания файла');
+      }
+    } catch (error) {
+      console.error('Ошибка скачивания файла:', error);
+      alert('Ошибка скачивания файла');
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
   const copyToClipboard = (text) => {
@@ -497,6 +828,126 @@ const TaskDetails = ({ task, onTaskUpdate }) => {
             </SectionContent>
           </Section>
         )}
+
+        {/* Секция прикрепленных файлов */}
+        <FileSection>
+          <SectionTitle>
+            <FiPaperclip />
+            Прикрепленные файлы
+          </SectionTitle>
+          <SectionContent>
+            <FileUploadArea>
+              <p style={{ margin: '0 0 12px 0', color: '#666' }}>
+                Перетащите файлы сюда или нажмите для выбора
+              </p>
+              <FileUploadButton as="label" htmlFor="file-upload">
+                <FiPaperclip />
+                {isUploading ? 'Загрузка...' : 'Выбрать файлы'}
+              </FileUploadButton>
+              <input
+                id="file-upload"
+                type="file"
+                multiple
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+                disabled={isUploading}
+              />
+            </FileUploadArea>
+            
+            {files.length > 0 && (
+              <FileList>
+                {files.map((file) => (
+                  <FileItem key={file.id}>
+                    <FileInfo>
+                      <FileIcon>📄</FileIcon>
+                      <FileDetails>
+                        <FileName>{file.originalFilename}</FileName>
+                        <FileSize>{formatFileSize(file.fileSize)}</FileSize>
+                      </FileDetails>
+                    </FileInfo>
+                    <FileActions>
+                      <FileActionButton
+                        onClick={() => handleFileDownload(file.id, file.originalFilename)}
+                        title="Скачать"
+                      >
+                        <FiDownload />
+                      </FileActionButton>
+                      <FileActionButton
+                        className="danger"
+                        onClick={() => handleFileDelete(file.id)}
+                        title="Удалить"
+                      >
+                        <FiX />
+                      </FileActionButton>
+                    </FileActions>
+                  </FileItem>
+                ))}
+              </FileList>
+            )}
+          </SectionContent>
+        </FileSection>
+
+        {/* Секция демонстрации проекта */}
+        <FileSection>
+          <SectionTitle>
+            <FiCamera />
+            Демонстрация проекта
+          </SectionTitle>
+          <SectionContent>
+            <FileUploadArea>
+              <p style={{ margin: '0 0 12px 0', color: '#666' }}>
+                Покажите, как выглядит ваш проект! Добавьте скриншоты готового результата
+              </p>
+              <FileUploadButton as="label" htmlFor="screenshot-upload">
+                <FiCamera />
+                {isUploading ? 'Загрузка...' : 'Добавить демонстрацию'}
+              </FileUploadButton>
+              <input
+                id="screenshot-upload"
+                type="file"
+                multiple
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleScreenshotUpload}
+                disabled={isUploading}
+              />
+            </FileUploadArea>
+            
+            {screenshots.length > 0 && (
+              <ScreenshotPreview>
+                {screenshots.map((screenshot) => (
+                  <ScreenshotItem key={screenshot.id}>
+                    <ScreenshotImage
+                      src={`/api/files/${screenshot.id}/download`}
+                      alt={screenshot.originalFilename}
+                    />
+                    <ScreenshotActions>
+                      <ScreenshotButton
+                        onClick={() => handleFileDownload(screenshot.id, screenshot.originalFilename)}
+                        title="Скачать"
+                      >
+                        <FiDownload />
+                      </ScreenshotButton>
+                      <ScreenshotButton
+                        onClick={() => handleScreenshotDelete(screenshot.id)}
+                        title="Удалить"
+                        style={{ background: 'rgba(231, 76, 60, 0.8)' }}
+                      >
+                        <FiX />
+                      </ScreenshotButton>
+                    </ScreenshotActions>
+                  </ScreenshotItem>
+                ))}
+              </ScreenshotPreview>
+            )}
+          </SectionContent>
+        </FileSection>
+
+        {/* Кнопка сохранения */}
+        <SaveButton onClick={() => onTaskUpdate(task)}>
+          <FiSave />
+          Сохранить изменения
+        </SaveButton>
       </Content>
     </>
   );

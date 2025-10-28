@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: taskmanager
       POSTGRES_USER: taskmanager
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskmanager123}
+      POSTGRES_PASSWORD: taskmanager123
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -24,9 +24,9 @@ services:
       dockerfile: Dockerfile.backend
     container_name: taskmanager_backend
     environment:
-      DATABASE_URL: postgresql://taskmanager:${POSTGRES_PASSWORD:-taskmanager123}@postgres:5432/taskmanager
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
-      FLASK_ENV: ${FLASK_ENV:-production}
+      DATABASE_URL: postgresql://taskmanager:taskmanager123@postgres:5432/taskmanager
+      SECRET_KEY: dev-secret-key-change-in-production
+      FLASK_ENV: development
     volumes:
       - uploads_data:/app/uploads
     ports:

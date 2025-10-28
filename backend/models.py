@@ -194,3 +194,85 @@ class TaskFile(db.Model):
     
     def __repr__(self):
         return f'<TaskFile {self.original_filename}>'
+
+class Chat(db.Model):
+    __tablename__ = 'chats'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Участники чата
+    participants = db.relationship('User', secondary='chat_participants', backref='chats')
+    
+    # Сообщения в чате
+    messages = db.relationship('ChatMessage', backref='chat', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'createdAt': self.created_at.isoformat(),
+            'updatedAt': self.updated_at.isoformat(),
+            'participants': [user.to_dict() for user in self.participants],
+            'lastMessage': self.messages[-1].to_dict() if self.messages else None,
+            'unreadCount': 0  # Будет вычисляться отдельно
+        }
+    
+    def __repr__(self):
+        return f'<Chat {self.id}>'
+
+# Промежуточная таблица для участников чата
+chat_participants = db.Table('chat_participants',
+    db.Column('chat_id', db.Integer, db.ForeignKey('chats.id'), primary_key=True),
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True)
+)
+
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    chat_id = db.Column(db.Integer, db.ForeignKey('chats.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    message_type = db.Column(db.String(20), default='text')  # text, image, file
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
+    
+    # Связи
+    sender = db.relationship('User', backref='sent_messages')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'chatId': self.chat_id,
+            'senderId': self.sender_id,
+            'sender': self.sender.to_dict() if self.sender else None,
+            'content': self.content,
+            'messageType': self.message_type,
+            'createdAt': self.created_at.isoformat(),
+            'isRead': self.is_read
+        }
+    
+    def __repr__(self):
+        return f'<ChatMessage {self.id}>'
+
+class UserOnlineStatus(db.Model):
+    __tablename__ = 'user_online_status'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True)
+    is_online = db.Column(db.Boolean, default=False)
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Связь
+    user = db.relationship('User', backref='online_status')
+    
+    def to_dict(self):
+        return {
+            'userId': self.user_id,
+            'isOnline': self.is_online,
+            'lastSeen': self.last_seen.isoformat()
+        }
+    
+    def __repr__(self):
+        return f'<UserOnlineStatus {self.user_id}>'

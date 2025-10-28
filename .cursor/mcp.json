@@ -1,0 +1,45 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/maxim/Project/Taskmanager2"],
+      "env": {}
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {}
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "env": {}
+    },
+    "everything": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-everything"],
+      "env": {}
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "enhanced-postgres-mcp-server"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://taskmanager:taskmanager123@localhost:5432/taskmanager"
+      }
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "puppeteer-mcp-server"],
+      "env": {}
+    },
+    "docker-manager": {
+      "command": "node",
+      "args": ["/Users/maxim/Project/Taskmanager2/docker-mcp-server.js"],
+      "env": {
+        "POSTGRES_PASSWORD": "taskmanager123",
+        "SECRET_KEY": "dev-secret-key-change-in-production",
+        "FLASK_ENV": "development"
+      }
+    }
+  }
+}

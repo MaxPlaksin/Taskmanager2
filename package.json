@@ -28,7 +28,7 @@
   "devDependencies": {
     "concurrently": "^7.6.0"
   },
-  "proxy": "http://localhost:5001",
+  "proxy": "http://localhost:5002",
   "browserslist": {
     "production": [
       ">0.2%",

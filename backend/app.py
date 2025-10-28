@@ -9,7 +9,7 @@ import os
 import uuid
 from werkzeug.utils import secure_filename
 from config import Config
-from models import db, Task, TaskFile, User, Project
+from models import db, Task, TaskFile, User, Project, Chat, ChatMessage, UserOnlineStatus
 from auth import auth_bp, admin_required, manager_or_admin_required
 
 app = Flask(__name__)
@@ -539,6 +539,219 @@ def delete_project(project_id):
     except Exception as e:
         db.session.rollback()
         print(f"Ошибка удаления проекта {project_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# Chat API endpoints
+@app.route('/api/chats', methods=['GET'])
+@login_required
+def get_user_chats():
+    """Получение всех чатов пользователя"""
+    try:
+        user_id = current_user.id
+        
+        # Получаем все чаты, где пользователь является участником
+        chats = Chat.query.filter(Chat.participants.any(id=user_id)).all()
+        
+        # Добавляем информацию о непрочитанных сообщениях
+        chat_list = []
+        for chat in chats:
+            chat_dict = chat.to_dict()
+            
+            # Подсчитываем непрочитанные сообщения
+            unread_count = ChatMessage.query.filter(
+                ChatMessage.chat_id == chat.id,
+                ChatMessage.sender_id != user_id,
+                ChatMessage.is_read == False
+            ).count()
+            
+            chat_dict['unreadCount'] = unread_count
+            chat_list.append(chat_dict)
+        
+        # Сортируем по последнему сообщению
+        chat_list.sort(key=lambda x: x['updatedAt'], reverse=True)
+        
+        return jsonify(chat_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/chats', methods=['POST'])
+@login_required
+def create_chat():
+    """Создание нового чата"""
+    try:
+        data = request.get_json()
+        participant_id = data.get('participantId')
+        
+        if not participant_id:
+            return jsonify({'error': 'Participant ID is required'}), 400
+        
+        # Проверяем, что участник существует
+        participant = User.query.get(participant_id)
+        if not participant:
+            return jsonify({'error': 'Participant not found'}), 404
+        
+        # Проверяем, не существует ли уже чат между этими пользователями
+        existing_chat = Chat.query.filter(
+            Chat.participants.any(id=current_user.id),
+            Chat.participants.any(id=participant_id)
+        ).first()
+        
+        if existing_chat:
+            return jsonify(existing_chat.to_dict())
+        
+        # Создаем новый чат
+        chat = Chat()
+        chat.participants = [current_user, participant]
+        
+        db.session.add(chat)
+        db.session.commit()
+        
+        return jsonify(chat.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/chats/<int:chat_id>/messages', methods=['GET'])
+@login_required
+def get_chat_messages(chat_id):
+    """Получение сообщений чата"""
+    try:
+        # Проверяем, что пользователь является участником чата
+        chat = Chat.query.filter(
+            Chat.id == chat_id,
+            Chat.participants.any(id=current_user.id)
+        ).first()
+        
+        if not chat:
+            return jsonify({'error': 'Chat not found'}), 404
+        
+        # Получаем сообщения
+        messages = ChatMessage.query.filter_by(chat_id=chat_id).order_by(ChatMessage.created_at.asc()).all()
+        
+        return jsonify([message.to_dict() for message in messages])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/chats/<int:chat_id>/messages', methods=['POST'])
+@login_required
+def send_message(chat_id):
+    """Отправка сообщения в чат"""
+    try:
+        # Проверяем, что пользователь является участником чата
+        chat = Chat.query.filter(
+            Chat.id == chat_id,
+            Chat.participants.any(id=current_user.id)
+        ).first()
+        
+        if not chat:
+            return jsonify({'error': 'Chat not found'}), 404
+        
+        data = request.get_json()
+        content = data.get('content')
+        message_type = data.get('messageType', 'text')
+        
+        if not content:
+            return jsonify({'error': 'Message content is required'}), 400
+        
+        # Создаем сообщение
+        message = ChatMessage(
+            chat_id=chat_id,
+            sender_id=current_user.id,
+            content=content,
+            message_type=message_type
+        )
+        
+        db.session.add(message)
+        
+        # Обновляем время последнего обновления чата
+        chat.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify(message.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/chats/<int:chat_id>/messages/<int:message_id>/read', methods=['PUT'])
+@login_required
+def mark_message_read(chat_id, message_id):
+    """Отметить сообщение как прочитанное"""
+    try:
+        # Проверяем, что пользователь является участником чата
+        chat = Chat.query.filter(
+            Chat.id == chat_id,
+            Chat.participants.any(id=current_user.id)
+        ).first()
+        
+        if not chat:
+            return jsonify({'error': 'Chat not found'}), 404
+        
+        # Находим сообщение
+        message = ChatMessage.query.filter_by(id=message_id, chat_id=chat_id).first()
+        if not message:
+            return jsonify({'error': 'Message not found'}), 404
+        
+        # Отмечаем как прочитанное
+        message.is_read = True
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/online', methods=['GET'])
+@login_required
+def get_online_users():
+    """Получение списка всех пользователей с их онлайн статусом"""
+    try:
+        users = User.query.all()
+        user_list = []
+        
+        for user in users:
+            user_dict = user.to_dict()
+            
+            # Получаем онлайн статус
+            online_status = UserOnlineStatus.query.filter_by(user_id=user.id).first()
+            if online_status:
+                user_dict['isOnline'] = online_status.is_online
+                user_dict['lastSeen'] = online_status.last_seen.isoformat()
+            else:
+                user_dict['isOnline'] = False
+                user_dict['lastSeen'] = None
+            
+            user_list.append(user_dict)
+        
+        return jsonify(user_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/<int:user_id>/online', methods=['PUT'])
+@login_required
+def update_online_status(user_id):
+    """Обновление онлайн статуса пользователя"""
+    try:
+        if current_user.id != user_id:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        data = request.get_json()
+        is_online = data.get('isOnline', True)
+        
+        # Находим или создаем запись о статусе
+        online_status = UserOnlineStatus.query.filter_by(user_id=user_id).first()
+        if not online_status:
+            online_status = UserOnlineStatus(user_id=user_id)
+            db.session.add(online_status)
+        
+        online_status.is_online = is_online
+        online_status.last_seen = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify(online_status.to_dict())
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

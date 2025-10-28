@@ -12,7 +12,8 @@ const NavigationSidebar = ({
   selectedChatId,
   projects,
   user,
-  onLogout
+  onLogout,
+  onNavigateToHome
 }) => {
   const [expandedSections, setExpandedSections] = useState({
     profile: false,
@@ -271,6 +272,35 @@ const NavigationSidebar = ({
         <div style={{ fontSize: '12px', color: '#a0aec0', marginBottom: '8px' }}>
           Всего: {projects.length}
         </div>
+        <button
+          onClick={onNavigateToHome}
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            background: 'rgba(74, 144, 226, 0.2)',
+            color: '#4a90e2',
+            border: '1px solid rgba(74, 144, 226, 0.3)',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '10px',
+            fontWeight: '500'
+          }}
+          onMouseOver={(e) => {
+            e.target.style.background = 'rgba(74, 144, 226, 0.3)';
+          }}
+          onMouseOut={(e) => {
+            e.target.style.background = 'rgba(74, 144, 226, 0.2)';
+          }}
+        >
+          <span style={{ fontSize: '16px' }}>🏠</span>
+          Главная
+        </button>
+        
         {(user && (user.role === 'admin' || user.role === 'manager' || user.role === 'director')) && (
           <button
             onClick={onAddProject}

@@ -189,6 +189,32 @@ def register():
         'generated_password': password  # Временно возвращаем пароль для тестирования
     }), 201
 
+@auth_bp.route('/api/auth/reset-password/<int:user_id>', methods=['POST'])
+@admin_required
+def reset_password(user_id):
+    """Сброс пароля пользователя (только для администраторов)"""
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Генерируем новый пароль
+        new_password = generate_secure_password()
+        
+        # Обновляем пароль
+        user.password_hash = generate_password_hash(new_password)
+        user.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Пароль успешно сброшен',
+            'user': user.to_dict(),
+            'new_password': new_password
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @auth_bp.route('/api/auth/users', methods=['GET'])
 @admin_required
 def get_users():

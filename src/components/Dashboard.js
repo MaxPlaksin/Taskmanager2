@@ -339,7 +339,7 @@ const CustomToolbar = ({ label, onNavigate, onView, currentDate, onDateSelect })
   );
 };
 
-const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user }) => {
+const Dashboard = ({ tasks, onTaskSelect, selectedTask, onCreateTask, user, onTaskUpdate }) => {
   const [view, setView] = useState('month');
   const [date, setDate] = useState(new Date());
 

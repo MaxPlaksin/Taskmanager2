@@ -137,6 +137,9 @@ const UserInfo = ({ user, onLogout }) => {
   };
 
   const getInitials = (name) => {
+    if (!name || typeof name !== 'string') {
+      return '??';
+    }
     return name.split(' ').map(word => word[0]).join('').toUpperCase();
   };
 

@@ -262,10 +262,103 @@ function App() {
       }
 
       const result = await response.json();
-      alert(`Пользователь ${result.user.full_name} успешно создан! Пароль: ${result.generated_password}`);
       
-      // Обновляем список пользователей в чатах
-      window.location.reload();
+      // Показываем модальное окно с паролем
+      const passwordModal = document.createElement('div');
+      passwordModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      `;
+      
+      passwordModal.innerHTML = `
+        <div style="
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          max-width: 400px;
+          width: 90%;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        ">
+          <h3 style="margin: 0 0 16px 0; color: #333; font-size: 18px;">
+            ✅ Пользователь создан успешно!
+          </h3>
+          <p style="margin: 0 0 16px 0; color: #666; line-height: 1.5;">
+            <strong>Имя:</strong> ${result.user.full_name || result.user.fullName || 'Не указано'}<br>
+            <strong>Email:</strong> ${result.user.email}<br>
+            <strong>Роль:</strong> ${result.user.role}
+          </p>
+          <div style="
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+          ">
+            <p style="margin: 0 0 8px 0; color: #333; font-weight: 600;">
+              🔑 Сгенерированный пароль:
+            </p>
+            <div style="
+              background: white;
+              border: 1px solid #ddd;
+              border-radius: 6px;
+              padding: 12px;
+              font-family: monospace;
+              font-size: 16px;
+              font-weight: 600;
+              color: #4a90e2;
+              text-align: center;
+              letter-spacing: 1px;
+              user-select: all;
+            " id="password-display">
+              ${result.generated_password}
+            </div>
+            <p style="margin: 8px 0 0 0; color: #666; font-size: 12px;">
+              ⚠️ Обязательно сохраните этот пароль! Он больше не будет показан.
+            </p>
+          </div>
+          <button onclick="this.closest('.password-modal').remove(); window.location.reload();" style="
+            width: 100%;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+          " onmouseover="this.style.background='#357abd'" onmouseout="this.style.background='#4a90e2'">
+            Понятно, закрыть
+          </button>
+        </div>
+      `;
+      
+      passwordModal.className = 'password-modal';
+      document.body.appendChild(passwordModal);
+      
+      // Автоматически выделяем пароль для копирования
+      setTimeout(() => {
+        const passwordDisplay = document.getElementById('password-display');
+        if (passwordDisplay) {
+          // Создаем временный input для выделения текста
+          const tempInput = document.createElement('input');
+          tempInput.value = passwordDisplay.textContent;
+          tempInput.style.position = 'absolute';
+          tempInput.style.left = '-9999px';
+          document.body.appendChild(tempInput);
+          tempInput.select();
+          document.body.removeChild(tempInput);
+        }
+      }, 100);
     } catch (error) {
       throw error;
     }
@@ -317,6 +410,123 @@ function App() {
       } catch (error) {
         console.error('Error deleting user:', error);
         alert('Ошибка при удалении пользователя');
+      }
+    }
+  };
+
+  const handleResetPassword = async (user) => {
+    if (window.confirm(`Вы уверены, что хотите сбросить пароль для пользователя ${user.full_name}?`)) {
+      try {
+        const response = await fetch(`/api/auth/reset-password/${user.id}`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Ошибка при сбросе пароля');
+        }
+
+        const result = await response.json();
+        
+        // Показываем модальное окно с новым паролем
+        const passwordModal = document.createElement('div');
+        passwordModal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+        
+        passwordModal.innerHTML = `
+          <div style="
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+          ">
+            <h3 style="margin: 0 0 16px 0; color: #333; font-size: 18px;">
+              🔑 Пароль сброшен!
+            </h3>
+            <p style="margin: 0 0 16px 0; color: #666; line-height: 1.5;">
+              <strong>Пользователь:</strong> ${result.user.full_name || result.user.fullName || 'Не указано'}<br>
+              <strong>Email:</strong> ${result.user.email}
+            </p>
+            <div style="
+              background: #f8f9fa;
+              border: 1px solid #e9ecef;
+              border-radius: 8px;
+              padding: 16px;
+              margin: 16px 0;
+            ">
+              <p style="margin: 0 0 8px 0; color: #333; font-weight: 600;">
+                🔑 Новый пароль:
+              </p>
+              <div style="
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                padding: 12px;
+                font-family: monospace;
+                font-size: 16px;
+                font-weight: 600;
+                color: #4a90e2;
+                text-align: center;
+                letter-spacing: 1px;
+                user-select: all;
+              " id="new-password-display">
+                ${result.new_password}
+              </div>
+              <p style="margin: 8px 0 0 0; color: #666; font-size: 12px;">
+                ⚠️ Обязательно сохраните этот пароль! Он больше не будет показан.
+              </p>
+            </div>
+            <button onclick="this.closest('.password-modal').remove();" style="
+              width: 100%;
+              background: #4a90e2;
+              color: white;
+              border: none;
+              border-radius: 6px;
+              padding: 12px;
+              font-size: 14px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: background-color 0.2s;
+            " onmouseover="this.style.background='#357abd'" onmouseout="this.style.background='#4a90e2'">
+              Понятно, закрыть
+            </button>
+          </div>
+        `;
+        
+        passwordModal.className = 'password-modal';
+        document.body.appendChild(passwordModal);
+        
+        // Автоматически выделяем пароль для копирования
+        setTimeout(() => {
+          const passwordDisplay = document.getElementById('new-password-display');
+          if (passwordDisplay) {
+            // Создаем временный input для выделения текста
+            const tempInput = document.createElement('input');
+            tempInput.value = passwordDisplay.textContent;
+            tempInput.style.position = 'absolute';
+            tempInput.style.left = '-9999px';
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.body.removeChild(tempInput);
+          }
+        }, 100);
+        
+      } catch (error) {
+        alert(`Ошибка при сбросе пароля: ${error.message}`);
       }
     }
   };
@@ -467,6 +677,7 @@ function App() {
             selectedTask={selectedTask}
             onCreateTask={handleCreateTask}
             user={user}
+            onTaskUpdate={handleTaskUpdate}
           />
         );
       case 'projects':
@@ -477,6 +688,8 @@ function App() {
             selectedTask={selectedTask}
             onCreateTask={handleCreateTask}
             user={user}
+            onNavigateToHome={() => setActiveTab('dashboard')}
+            onTaskUpdate={handleTaskUpdate}
           />
         );
       case 'settings':
@@ -495,6 +708,13 @@ function App() {
             onCreateUser={() => setShowCreateUserModal(true)}
             onSearch={handleUserSearch}
             onFilter={handleUserFilter}
+            onResetPassword={handleResetPassword}
+          />
+        );
+      case 'chats':
+        return (
+          <Chat
+            currentUser={user}
           />
         );
       default:
@@ -540,6 +760,7 @@ function App() {
           projects={projects}
           user={user}
           onLogout={handleLogout}
+          onNavigateToHome={() => setActiveTab('dashboard')}
         />
         <MainContent>
           <ContentArea>

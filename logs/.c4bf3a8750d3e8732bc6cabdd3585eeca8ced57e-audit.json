@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/maxim/Project/Taskmanager2/logs/.c4bf3a8750d3e8732bc6cabdd3585eeca8ced57e-audit.json",
+    "files": [
+        {
+            "date": 1761573257389,
+            "name": "/Users/maxim/Project/Taskmanager2/logs/mcp-puppeteer-2025-10-27.log",
+            "hash": "016522680b69476fd5c5a9561e9be73ca39bc73c1aee3ee5e21d30d103289e5b"
+        }
+    ],
+    "hashType": "sha256"
+}

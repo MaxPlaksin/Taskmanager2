@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FiUser, FiEdit, FiTrash2, FiPlus, FiSearch, FiFilter } from 'react-icons/fi';
+import { FiUser, FiEdit, FiTrash2, FiPlus, FiSearch, FiFilter, FiKey } from 'react-icons/fi';
 
 const UsersContainer = styled.div`
   display: flex;
@@ -187,6 +187,12 @@ const ActionButton = styled.button`
     color: #856404;
   }
   
+  &.reset:hover {
+    background: #d1ecf1;
+    border-color: #17a2b8;
+    color: #0c5460;
+  }
+  
   &.delete:hover {
     background: #f8d7da;
     border-color: #dc3545;
@@ -218,7 +224,7 @@ const EmptyText = styled.p`
   margin: 0;
 `;
 
-const UsersList = ({ users, onEditUser, onDeleteUser, onCreateUser, onSearch, onFilter }) => {
+const UsersList = ({ users, onEditUser, onDeleteUser, onCreateUser, onSearch, onFilter, onResetPassword }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
@@ -255,6 +261,9 @@ const UsersList = ({ users, onEditUser, onDeleteUser, onCreateUser, onSearch, on
   };
 
   const getInitials = (name) => {
+    if (!name || typeof name !== 'string') {
+      return '??';
+    }
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
@@ -298,17 +307,17 @@ const UsersList = ({ users, onEditUser, onDeleteUser, onCreateUser, onSearch, on
               <UserCard key={user.id}>
                 <UserHeader>
                   <UserAvatar role={user.role}>
-                    {getInitials(user.full_name)}
+                    {getInitials(user.fullName || user.full_name || user.username || 'Пользователь')}
                   </UserAvatar>
                   <UserInfo>
-                    <UserName>{user.full_name}</UserName>
+                    <UserName>{user.fullName || user.full_name || user.username || 'Пользователь'}</UserName>
                     <UserRole style={{ color: getRoleColor(user.role) }}>
                       {getRoleName(user.role)}
                     </UserRole>
                   </UserInfo>
                 </UserHeader>
                 
-                <UserEmail>{user.email}</UserEmail>
+                <UserEmail>{user.email || 'Нет email'}</UserEmail>
                 
                 <UserActions>
                   <ActionButton 
@@ -317,6 +326,13 @@ const UsersList = ({ users, onEditUser, onDeleteUser, onCreateUser, onSearch, on
                   >
                     <FiEdit />
                     Редактировать
+                  </ActionButton>
+                  <ActionButton 
+                    className="reset"
+                    onClick={() => onResetPassword(user)}
+                  >
+                    <FiKey />
+                    Сбросить пароль
                   </ActionButton>
                   <ActionButton 
                     className="delete"
