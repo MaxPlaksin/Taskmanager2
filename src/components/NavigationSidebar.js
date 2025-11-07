@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const NavigationSidebar = ({
   onProjectSelect,
@@ -7,74 +7,15 @@ const NavigationSidebar = ({
   onDeleteProject,
   onCreateUser,
   onViewUsers,
-  onChatSelect,
   selectedProjectId,
-  selectedChatId,
   projects,
   user,
   onLogout,
   onNavigateToHome
 }) => {
   const [expandedSections, setExpandedSections] = useState({
-    profile: false,
-    personalChats: true,
-    groupChats: false
+    profile: false
   });
-
-  const [personalChats, setPersonalChats] = useState([]);
-
-  const groupChats = [
-    { id: 'general', name: 'Общий чат', unread: 0, avatar: '💬' },
-    { id: 'developers', name: 'Чат разработчиков', unread: 3, avatar: '👨‍💻' },
-    { id: 'managers', name: 'Чат менеджеров', unread: 1, avatar: '👔' },
-    { id: 'projects', name: 'Обсуждение проектов', unread: 0, avatar: '📋' }
-  ];
-
-  // Загружаем всех пользователей для личных чатов только если есть зарегистрированные пользователи
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch('/api/users', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        if (response.ok) {
-          const users = await response.json();
-          // Исключаем текущего пользователя из списка
-          const otherUsers = users
-            .filter(u => u.id !== user?.id)
-            .map(u => {
-              // Извлекаем фамилию и имя из полного имени
-              const fullName = u.fullName || u.username;
-              const nameParts = fullName.split(' ');
-              const displayName = nameParts.length >= 2 
-                ? `${nameParts[0]} ${nameParts[1]}` // Имя и фамилия
-                : fullName; // Если только одно слово, показываем как есть
-              
-              return {
-                id: u.id,
-                name: displayName,
-                unread: 0,
-                avatar: u.role === 'admin' ? '👑' : 
-                       u.role === 'director' ? '🎯' :
-                       u.role === 'manager' ? '👔' : 
-                       u.role === 'developer' ? '👨‍💻' : '👤'
-              };
-            });
-          setPersonalChats(otherUsers);
-        }
-      } catch (error) {
-        console.error('Ошибка загрузки пользователей:', error);
-        // Если ошибка, оставляем список пустым
-        setPersonalChats([]);
-      }
-    };
-
-    if (user) {
-      fetchUsers();
-    }
-  }, [user]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -401,154 +342,6 @@ const NavigationSidebar = ({
         )}
       </div>
 
-      {/* Personal Chats Section */}
-      <div style={{ padding: '20px', borderBottom: '1px solid #2d3748' }}>
-        <div 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-            marginBottom: '12px'
-          }}
-          onClick={() => toggleSection('personalChats')}
-        >
-          <div style={{ fontSize: '14px', fontWeight: '600' }}>Личные чаты</div>
-          <div style={{ fontSize: '12px', opacity: 0.7 }}>
-            {expandedSections.personalChats ? '▼' : '▶'}
-          </div>
-        </div>
-        
-        {expandedSections.personalChats && (
-          <div>
-            {personalChats.length > 0 ? (
-              personalChats.map(chat => (
-                <div
-                  key={chat.id}
-                  onClick={() => onChatSelect(chat)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    background: selectedChatId === chat.id ? 'rgba(107, 70, 193, 0.3)' : 'transparent',
-                    marginBottom: '4px'
-                  }}
-                >
-                  <div style={{ fontSize: '16px' }}>{chat.avatar}</div>
-                  <div style={{ flex: 1, fontSize: '14px' }}>{chat.name}</div>
-                  {chat.unread > 0 && (
-                    <div style={{
-                      background: '#e53e3e',
-                      color: 'white',
-                      borderRadius: '10px',
-                      padding: '2px 6px',
-                      fontSize: '10px',
-                      fontWeight: '600'
-                    }}>
-                      {chat.unread}
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div style={{
-                padding: '16px',
-                textAlign: 'center',
-                color: '#a0aec0',
-                fontSize: '12px',
-                fontStyle: 'italic'
-              }}>
-                Нет зарегистрированных пользователей
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Group Chats Section */}
-      <div style={{ padding: '20px', borderBottom: '1px solid #2d3748' }}>
-        <div 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-            marginBottom: '12px'
-          }}
-          onClick={() => toggleSection('groupChats')}
-        >
-          <div style={{ fontSize: '14px', fontWeight: '600' }}>Групповые чаты</div>
-          <div style={{ fontSize: '12px', opacity: 0.7 }}>
-            {expandedSections.groupChats ? '▼' : '▶'}
-          </div>
-        </div>
-        
-        {expandedSections.groupChats && (
-          <div>
-            {groupChats.length > 0 ? (
-              groupChats.map(chat => (
-                <div
-                  key={chat.id}
-                  onClick={() => onChatSelect(chat)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    background: selectedChatId === chat.id ? 'rgba(107, 70, 193, 0.3)' : 'transparent',
-                    marginBottom: '4px'
-                  }}
-                >
-                  <div style={{ fontSize: '16px' }}>{chat.avatar}</div>
-                  <div style={{ flex: 1, fontSize: '14px' }}>{chat.name}</div>
-                  {chat.unread > 0 && (
-                    <div style={{
-                      background: '#e53e3e',
-                      color: 'white',
-                      borderRadius: '10px',
-                      padding: '2px 6px',
-                      fontSize: '10px',
-                      fontWeight: '600'
-                    }}>
-                      {chat.unread}
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div style={{
-                padding: '16px',
-                textAlign: 'center',
-                color: '#a0aec0',
-                fontSize: '12px',
-                fontStyle: 'italic'
-              }}>
-                Нет групповых чатов
-              </div>
-            )}
-            <button
-              style={{
-                width: '100%',
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                color: 'white',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '12px',
-                marginTop: '8px'
-              }}
-            >
-              + Создать групповой чат
-            </button>
-          </div>
-        )}
-      </div>
 
     </div>
   );

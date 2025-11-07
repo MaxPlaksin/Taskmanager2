@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FiHome, FiFolder, FiSettings, FiUser, FiLogOut, FiChevronDown, FiMessageCircle } from 'react-icons/fi';
+import { FiHome, FiFolder, FiSettings, FiUser, FiLogOut, FiChevronDown } from 'react-icons/fi';
 
 const SidebarContainer = styled.div`
   width: 250px;
@@ -195,7 +195,6 @@ const Sidebar = ({ activeTab, onTabChange, user, onLogout }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Дашборд', icon: FiHome },
     { id: 'projects', label: 'Проекты', icon: FiFolder },
-    { id: 'chats', label: 'Чаты', icon: FiMessageCircle },
     { id: 'settings', label: 'Настройки', icon: FiSettings }
   ];
 

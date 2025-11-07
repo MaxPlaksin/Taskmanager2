@@ -10,13 +10,10 @@ import Login from './components/Login';
 import NavigationSidebar from './components/NavigationSidebar';
 import AddProjectModal from './components/AddProjectModal';
 import EditProjectModal from './components/EditProjectModal';
-import Chat from './components/Chat';
-import ChatModal from './components/ChatModal';
 import CreateUserModal from './components/CreateUserModal';
 import UsersList from './components/UsersList';
 import EditUserModal from './components/EditUserModal';
 import { TaskProvider } from './contexts/TaskContext';
-import { SocketProvider } from './contexts/SocketContext';
 
 const AppContainer = styled.div`
   display: flex;
@@ -60,8 +57,6 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [selectedChatId, setSelectedChatId] = useState(null);
-  const [showChatModal, setShowChatModal] = useState(false);
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [showEditProjectModal, setShowEditProjectModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
@@ -236,16 +231,6 @@ function App() {
     }
   };
 
-  const handleChatSelect = (chatId) => {
-    // chatId уже содержит всю информацию о пользователе из NavigationSidebar
-    setSelectedChatId(chatId);
-    setShowChatModal(true);
-  };
-
-  const handleCloseChatModal = () => {
-    setShowChatModal(false);
-    setSelectedChatId(null);
-  };
 
   const handleCreateUser = async (userData) => {
     try {
@@ -712,12 +697,6 @@ function App() {
             onResetPassword={handleResetPassword}
           />
         );
-      case 'chats':
-        return (
-          <Chat
-            currentUser={user}
-          />
-        );
       default:
         return (
           <Dashboard
@@ -746,8 +725,7 @@ function App() {
   }
 
   return (
-    <SocketProvider>
-      <TaskProvider value={{ tasks, handleTaskUpdate, handleTaskCreate, handleTaskDelete }}>
+    <TaskProvider value={{ tasks, handleTaskUpdate, handleTaskCreate, handleTaskDelete }}>
         <AppContainer>
         <NavigationSidebar
           onProjectSelect={setSelectedProjectId}
@@ -756,9 +734,7 @@ function App() {
           onDeleteProject={handleDeleteProject}
           onCreateUser={() => setShowCreateUserModal(true)}
           onViewUsers={handleViewUsers}
-          onChatSelect={handleChatSelect}
           selectedProjectId={selectedProjectId}
-          selectedChatId={selectedChatId}
           projects={projects}
           user={user}
           onLogout={handleLogout}
@@ -806,14 +782,6 @@ function App() {
           onSave={handleUpdateProject}
         />
         
-        {showChatModal && (
-          <ChatModal
-            selectedChat={selectedChatId}
-            currentUser={user}
-            onClose={handleCloseChatModal}
-          />
-        )}
-        
         {showCreateUserModal && (
           <CreateUserModal
             isOpen={showCreateUserModal}
@@ -836,7 +804,6 @@ function App() {
         )}
       </AppContainer>
     </TaskProvider>
-    </SocketProvider>
   );
 }
 

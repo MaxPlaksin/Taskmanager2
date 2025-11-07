@@ -247,7 +247,7 @@ const CreateUserModal = ({ isOpen, onClose, onSave, onViewUsers }) => {
                   required
                 />
               </InputContainer>
-              <HelpText>Укажите фамилию и имя для отображения в чатах</HelpText>
+              <HelpText>Укажите фамилию и имя для отображения в системе</HelpText>
             </FormGroup>
 
 

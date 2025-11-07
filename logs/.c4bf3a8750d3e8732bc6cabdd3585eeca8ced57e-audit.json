@@ -9,6 +9,16 @@
             "date": 1761573257389,
             "name": "/Users/maxim/Project/Taskmanager2/logs/mcp-puppeteer-2025-10-27.log",
             "hash": "016522680b69476fd5c5a9561e9be73ca39bc73c1aee3ee5e21d30d103289e5b"
+        },
+        {
+            "date": 1761651201140,
+            "name": "/Users/maxim/Project/Taskmanager2/logs/mcp-puppeteer-2025-10-28.log",
+            "hash": "a6480655d6af5698ef31257ecb9da9acc02a26a712e6ba65c98f2802e56460ca"
+        },
+        {
+            "date": 1762513079992,
+            "name": "/Users/maxim/Project/Taskmanager2/logs/mcp-puppeteer-2025-11-07.log",
+            "hash": "d7a7e7fd6444275c4a2d2185f05507e80842dc4fbffe97857ebec93394f94c22"
         }
     ],
     "hashType": "sha256"
